@@ -16,30 +16,27 @@
 # or in `pkgs.execline.doc`.
 let
 
-  # wrapper for execlineb that doesn’t need the execline commands
-  # in PATH to work (making them appear like “builtins”)
-  # TODO: upstream into nixpkgs
-  # TODO: the grep could be nicer
-  execlineb-with-builtins =
-    let eldir = "${pkgs.execline}/bin";
-    in pkgs.writeScriptBin "execlineb" ''
-      #!${eldir}/execlineb -s0
-      # appends the execlineb bin dir to PATH if not yet in PATH
-      ${eldir}/define eldir ${eldir}
-      ''${eldir}/ifelse
-      {
-        # since this is nix, we can grep for the execline drv hash in PATH
-        # to see whether it’s already in there
-        ''${eldir}/pipeline
-        { ${pkgs.coreutils}/bin/printenv PATH }
-        ${pkgs.gnugrep}/bin/grep --quiet "${eldir}"
-      }
-      # it’s there already
-      { ''${eldir}/execlineb $@ }
-      # not there yet, add it
-      ''${eldir}/importas oldpath PATH
-      ''${eldir}/export PATH "''${eldir}:''${oldpath}"
-      ''${eldir}/execlineb $@
+    # A wrapper around execlineb, which provides all execline
+    # tools on `execlineb`’s PATH.
+    # It is implemented as a C script, because on non-Linux,
+    # nested shebang lines are not supported.
+    # TODO: upstream into nixpkgs https://github.com/NixOS/nixpkgs/pull/71357
+    execline = pkgs.execline.override { execlineb-with-builtins = false; };
+    execlineb-with-builtins = pkgs.runCommandCC "execlineb" {} ''
+      substitute \
+        ${./execlineb-wrapper.c} \
+        execlineb-wrapper.c \
+        --subst-var-by "execlineb-path" "${execline}/bin/execlineb" \
+        --subst-var-by "execline-bin-path" ${pkgs.lib.makeBinPath [ execline ]}
+
+      cc \
+        -O \
+        -Wall -Wpedantic \
+        -o "$out" \
+        -I "${pkgs.skalibs.dev}/include" \
+        -L "${pkgs.skalibs.lib}/lib" \
+        -l"skarnet" \
+        execlineb-wrapper.c
     '';
 
   # replaces " and \ to \" and \\ respectively and quote with "
@@ -71,7 +68,7 @@ let
   # Everything is escaped correctly.
   # TODO upstream into nixpkgs
   writeExeclineCommon = writer: name: { readNArgs ? 0 }: argList: writer name ''
-    #!${execlineb-with-builtins}/bin/execlineb -Ws${toString readNArgs}
+    #!${execlineb-with-builtins} -Ws${toString readNArgs}
     ${escapeExecline argList}
   '';
   writeExecline = writeExeclineCommon pkgs.writeScript;
