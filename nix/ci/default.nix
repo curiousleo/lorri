@@ -21,13 +21,31 @@ let
   ];
 
   cargoEnvironment =
-    # we have to add the bin to PATH,
-    # otherwise cargo doesn’t find its subcommands
-    pathPrependBins [ rust pkgs.gcc ]
-    ++ [
-      "export" "BUILD_REV_COUNT" (toString BUILD_REV_COUNT)
-      "export" "RUN_TIME_CLOSURE" RUN_TIME_CLOSURE
-    ];
+    let
+      # we have to use a few things from /usr/bin on Darwin
+      unsandboxedTools = [
+        # for GCC’s collect2
+        "nm" "strip"
+        # rust packages
+        "dsymutil"
+      ];
+      darwinUnsandboxedBinutils = pipe unsandboxedTools [
+        (map (tool: ''ln -sT "/usr/bin/${tool}" "$out/bin/${tool}"''))
+        (lns: [''mkdir -p $out/bin''] ++ lns)
+        (pkgs.lib.concatStringsSep "\n")
+        (pkgs.runCommand "unsanboxed-binutils" {})
+      ];
+    in
+      # we have to add the bin to PATH,
+      # otherwise cargo doesn’t find its subcommands
+      (pathPrependBins
+        ([ rust pkgs.gcc ]
+        # cargo needs `nm` on Darwin for linking
+        ++ pkgs.lib.optional pkgs.stdenv.isDarwin darwinUnsandboxedBinutils))
+      ++ [
+        "export" "BUILD_REV_COUNT" (toString BUILD_REV_COUNT)
+        "export" "RUN_TIME_CLOSURE" RUN_TIME_CLOSURE
+      ];
 
   cargo = name: setup: args:
     writeExecline name {} (cargoEnvironment ++ setup ++ [ "cargo" ] ++ args);
