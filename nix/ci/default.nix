@@ -20,6 +20,12 @@ let
     "${pkgs.shellcheck}/bin/shellcheck" "--shell" "bash" file
   ];
 
+  stdenvDrvEnvdir = export: drvAttrs: pkgs.runCommand "dumped-env" drvAttrs ''
+      mkdir $out
+      unset HOME TMP TEMP TEMPDIR TMPDIR NIX_ENFORCE_PURITY
+      ${pkgs.s6-portable-utils}/bin/s6-dumpenv $out
+    '';
+
   cargoEnvironment =
     let
       # we have to use a few things from /usr/bin on Darwin
@@ -35,16 +41,26 @@ let
         (pkgs.lib.concatStringsSep "\n")
         (pkgs.runCommand "unsanboxed-binutils" {})
       ];
+      darwinFrameworks = [
+        pkgs.darwin.Security
+        pkgs.darwin.apple_sdk.frameworks.CoreServices
+        pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+      ];
     in
+      # first TODO
+      [ "${pkgs.s6}/bin/s6-envdir" "-fn"
+           (stdenvDrvEnvdir [ "__impureHostDeps" "buildInputs" "NIX_IGNORE_LD_THROUGH_GCC" "NIX_COREFOUNDATION_RPATH" "MACOSX_DEPLOYMENT_TARGET" "CMAKE_OSX_ARCHITECTURES" "NIX_DONT_SET_RPATH" "PATH" ] { buildInputs = [ pkgs.darwin.Security ]; }) ]
       # we have to add the bin to PATH,
       # otherwise cargo doesn’t find its subcommands
-      (pathPrependBins
-        ([ rust pkgs.gcc ]
+      ++ (pathPrependBins
+        ([ rust pkgs.stdenv.cc ]
         # cargo needs `nm` on Darwin for linking
         ++ pkgs.lib.optional pkgs.stdenv.isDarwin darwinUnsandboxedBinutils))
       ++ [
+        "export" "NIX_LDFLAGS" "-F${pkgs.darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation -F${pkgs.darwin.apple_sdk.frameworks.Security}/Library/Frameworks -framework Security"
         "export" "BUILD_REV_COUNT" (toString BUILD_REV_COUNT)
         "export" "RUN_TIME_CLOSURE" RUN_TIME_CLOSURE
+        "if" [ "${pkgs.coreutils}/bin/env" ]
       ];
 
   cargo = name: setup: args:
@@ -111,7 +127,7 @@ let
   # environment between developer machine and CI
   emptyTestEnv = test:
     writeExecline "${test.name}-empty-env" {}
-      [ (runInEmptyEnv []) test ];
+      [ (runInEmptyEnv [ "USER" "HOME" "TERM" ]) test ];
 
   testsWithEmptyEnv = pkgs.lib.mapAttrs
     (_: test: test // { test = emptyTestEnv test.test; }) tests;
