@@ -446,6 +446,62 @@ rec {
 
 
 # end
+# crossbeam-channel-0.3.9
+
+  crates.crossbeam_channel."0.3.9" = deps: { features?(features_.crossbeam_channel."0.3.9" deps {}) }: buildRustCrate {
+    crateName = "crossbeam-channel";
+    version = "0.3.9";
+    description = "Multi-producer multi-consumer channels for message passing";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "0si8kg061qgadx56dfyil2jq0ffckg6sk3mf2vl8ha8fwi9kd34h";
+    dependencies = mapFeatures features ([
+      (crates."crossbeam_utils"."${deps."crossbeam_channel"."0.3.9"."crossbeam_utils"}" deps)
+    ]);
+  };
+  features_.crossbeam_channel."0.3.9" = deps: f: updateFeatures f (rec {
+    crossbeam_channel."0.3.9".default = (f.crossbeam_channel."0.3.9".default or true);
+    crossbeam_utils."${deps.crossbeam_channel."0.3.9".crossbeam_utils}".default = true;
+  }) [
+    (features_.crossbeam_utils."${deps."crossbeam_channel"."0.3.9"."crossbeam_utils"}" deps)
+  ];
+
+
+# end
+# crossbeam-utils-0.6.6
+
+  crates.crossbeam_utils."0.6.6" = deps: { features?(features_.crossbeam_utils."0.6.6" deps {}) }: buildRustCrate {
+    crateName = "crossbeam-utils";
+    version = "0.6.6";
+    description = "Utilities for concurrent programming";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "01gxccmrjkkcavdh8fc01kj3b5fmk10f0lkx66jmnv69kcssry72";
+    dependencies = mapFeatures features ([
+      (crates."cfg_if"."${deps."crossbeam_utils"."0.6.6"."cfg_if"}" deps)
+    ]
+      ++ (if features.crossbeam_utils."0.6.6".lazy_static or false then [ (crates.lazy_static."${deps."crossbeam_utils"."0.6.6".lazy_static}" deps) ] else []));
+    features = mkFeatures (features."crossbeam_utils"."0.6.6" or {});
+  };
+  features_.crossbeam_utils."0.6.6" = deps: f: updateFeatures f (rec {
+    cfg_if."${deps.crossbeam_utils."0.6.6".cfg_if}".default = true;
+    crossbeam_utils = fold recursiveUpdate {} [
+      { "0.6.6"."lazy_static" =
+        (f.crossbeam_utils."0.6.6"."lazy_static" or false) ||
+        (f.crossbeam_utils."0.6.6".std or false) ||
+        (crossbeam_utils."0.6.6"."std" or false); }
+      { "0.6.6"."std" =
+        (f.crossbeam_utils."0.6.6"."std" or false) ||
+        (f.crossbeam_utils."0.6.6".default or false) ||
+        (crossbeam_utils."0.6.6"."default" or false); }
+      { "0.6.6".default = (f.crossbeam_utils."0.6.6".default or true); }
+    ];
+    lazy_static."${deps.crossbeam_utils."0.6.6".lazy_static}".default = true;
+  }) [
+    (features_.cfg_if."${deps."crossbeam_utils"."0.6.6"."cfg_if"}" deps)
+    (features_.lazy_static."${deps."crossbeam_utils"."0.6.6"."lazy_static"}" deps)
+  ];
+
+
+# end
 # directories-1.0.2
 
   crates.directories."1.0.2" = deps: { features?(features_.directories."1.0.2" deps {}) }: buildRustCrate {
