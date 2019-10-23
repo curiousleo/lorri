@@ -7,6 +7,8 @@
 //! can parse additional information from the `nix-build`
 //! `stderr`, like which source files are used by the evaluator.
 
+extern crate crossbeam_channel as chan;
+
 use cas::ContentAddressable;
 use nix::StorePath;
 use osstrlines;
@@ -16,7 +18,6 @@ use std::ffi::{OsStr, OsString};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::mpsc::Sender;
 use std::thread;
 use {DrvFile, NixFile};
 
@@ -43,7 +44,7 @@ struct InstantiateOutput {
 }
 
 fn instrumented_instantiation(
-    tx: Sender<OsString>,
+    tx: chan::Sender<OsString>,
     root_nix_file: &NixFile,
     cas: &ContentAddressable,
 ) -> Result<InstantiateOutput, std::io::Error> {
@@ -191,7 +192,7 @@ struct BuildOutput {
 ///
 /// Instruments the nix file to gain extra information,
 /// which is valuable even if the build fails.
-fn build(tx: Sender<OsString>, drv_path: DrvFile) -> Result<BuildOutput, std::io::Error> {
+fn build(tx: chan::Sender<OsString>, drv_path: DrvFile) -> Result<BuildOutput, std::io::Error> {
     //let drv_path = s.path.clone();
     match ::nix::CallOpts::file(drv_path.as_path())
         .set_stderr_sender(tx)
@@ -249,7 +250,7 @@ pub enum RunStatus {
 /// Instruments the nix file to gain extra information,
 /// which is valuable even if the build fails.
 pub fn run(
-    tx: Sender<OsString>,
+    tx: chan::Sender<OsString>,
     root_nix_file: &NixFile,
     cas: &ContentAddressable,
 ) -> Result<RunResult, Error> {
@@ -453,7 +454,7 @@ in {}
         print!("{}", nix_drv);
 
         // build, because instantiate doesn’t return the build output (obviously …)
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (tx, rx) = chan::unbounded();
         let info = run(tx, &::NixFile::from(cas.file_from_string(&nix_drv)?), &cas).unwrap();
         let stderr = rx.iter().collect::<Vec<OsString>>();
         println!("stderr:");
@@ -491,7 +492,7 @@ in {}
             &format!("dep = {};", drv("dep", r##"args = [ "-c" "exit 1" ];"##)),
         ))?);
 
-        let (tx, _rx) = std::sync::mpsc::channel();
+        let (tx, _rx) = chan::unbounded();
         run(tx, &d, &cas).expect("build can fail, but must not panic");
         Ok(())
     }

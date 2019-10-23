@@ -32,6 +32,8 @@
 //! }
 //! ```
 
+extern crate crossbeam_channel as chan;
+
 use osstrlines;
 use serde_json;
 use std::collections::HashMap;
@@ -39,7 +41,6 @@ use std::ffi::{OsStr, OsString};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process::{ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
-use std::sync::mpsc;
 use std::thread;
 use vec1::Vec1;
 
@@ -49,7 +50,7 @@ pub struct CallOpts<'a> {
     input: Input<'a>,
     attribute: Option<String>,
     argstrs: HashMap<String, String>,
-    stderr_line_tx: Option<mpsc::Sender<OsString>>,
+    stderr_line_tx: Option<chan::Sender<OsString>>,
 }
 
 /// Which input to give nix.
@@ -120,7 +121,7 @@ impl<'a> CallOpts<'a> {
         }
     }
 
-    /// Provide a Sender half of an mpsc channel, where Nix will send
+    /// Provide a `chan::Sender` half of a crossbeam channel, where Nix will send
     /// stderr log lines.
     ///
     /// It is an error to hang up the receiver before the end of
@@ -129,17 +130,17 @@ impl<'a> CallOpts<'a> {
     ///
     /// ```rust
     /// extern crate lorri;
+    /// extern crate crossbeam_channel as chan;
     /// use lorri::nix;
-    /// use std::sync::mpsc::channel;
     ///
-    /// let (tx, rx) = channel();
+    /// let (tx, rx) = chan::unbounded();
     /// let output: Result<u8, _> = nix::CallOpts::expression("builtins.trace ''Hello!'' 5")
     ///     .set_stderr_sender(tx)
     ///     .value();
     /// assert_eq!(output.unwrap(), 5);
     /// assert_eq!(rx.recv().unwrap(), "trace: Hello!");
     /// ```
-    pub fn set_stderr_sender(&mut self, sender: mpsc::Sender<OsString>) -> &mut Self {
+    pub fn set_stderr_sender(&mut self, sender: chan::Sender<OsString>) -> &mut Self {
         self.stderr_line_tx = Some(sender);
         self
     }
@@ -540,11 +541,10 @@ impl From<BuildError> for OnePathError {
 
 #[cfg(test)]
 mod tests {
-    use super::CallOpts;
+    use super::*;
     use std::env;
     use std::ffi::OsStr;
     use std::path::{Path, PathBuf};
-    use std::sync::mpsc::channel;
 
     #[test]
     fn cmd_arguments_expression() {
@@ -591,7 +591,7 @@ mod tests {
     fn build_with_stderr_sender() {
         env::set_var("NIX_PATH", "nixpkgs=./nix/bogus-nixpkgs/");
 
-        let (tx, rx) = channel();
+        let (tx, rx) = chan::unbounded();
         let _result = CallOpts::expression(
             r#"
                   import <nixpkgs> {}
