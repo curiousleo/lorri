@@ -7,7 +7,7 @@
 //! can parse additional information from the `nix-build`
 //! `stderr`, like which source files are used by the evaluator.
 
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 
 use cas::ContentAddressable;
 use nix::StorePath;

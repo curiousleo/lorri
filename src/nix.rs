@@ -32,7 +32,7 @@
 //! }
 //! ```
 
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 
 use osstrlines;
 use serde_json;
@@ -130,7 +130,7 @@ impl<'a> CallOpts<'a> {
     ///
     /// ```rust
     /// extern crate lorri;
-    /// extern crate crossbeam_channel as chan;
+    /// extern crate crossbeam as chan;
     /// use lorri::nix;
     ///
     /// let (tx, rx) = chan::unbounded();

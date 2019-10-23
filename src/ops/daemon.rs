@@ -1,7 +1,7 @@
 //! Run a BuildLoop for `shell.nix`, watching for input file changes.
 //! Can be used together with `direnv`.
 
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 
 use crate::daemon::Daemon;
 use crate::ops::{ok, ExitError, OpResult};

@@ -16,7 +16,7 @@ rec {
       dependencies = mapFeatures features ([
         (cratesIO.crates."atomicwrites"."${deps."lorri"."0.1.0"."atomicwrites"}" deps)
         (cratesIO.crates."bincode"."${deps."lorri"."0.1.0"."bincode"}" deps)
-        (cratesIO.crates."crossbeam_channel"."${deps."lorri"."0.1.0"."crossbeam_channel"}" deps)
+        (cratesIO.crates."crossbeam"."${deps."lorri"."0.1.0"."crossbeam"}" deps)
         (cratesIO.crates."directories"."${deps."lorri"."0.1.0"."directories"}" deps)
         (cratesIO.crates."env_logger"."${deps."lorri"."0.1.0"."env_logger"}" deps)
         (cratesIO.crates."futures"."${deps."lorri"."0.1.0"."futures"}" deps)
@@ -38,7 +38,7 @@ rec {
     features_.lorri."0.1.0" = deps: f: updateFeatures f (rec {
       atomicwrites."${deps.lorri."0.1.0".atomicwrites}".default = true;
       bincode."${deps.lorri."0.1.0".bincode}".default = true;
-      crossbeam_channel."${deps.lorri."0.1.0".crossbeam_channel}".default = true;
+      crossbeam."${deps.lorri."0.1.0".crossbeam}".default = true;
       directories."${deps.lorri."0.1.0".directories}".default = true;
       env_logger."${deps.lorri."0.1.0".env_logger}".default = true;
       futures."${deps.lorri."0.1.0".futures}".default = true;
@@ -59,7 +59,7 @@ rec {
     }) [
       (cratesIO.features_.atomicwrites."${deps."lorri"."0.1.0"."atomicwrites"}" deps)
       (cratesIO.features_.bincode."${deps."lorri"."0.1.0"."bincode"}" deps)
-      (cratesIO.features_.crossbeam_channel."${deps."lorri"."0.1.0"."crossbeam_channel"}" deps)
+      (cratesIO.features_.crossbeam."${deps."lorri"."0.1.0"."crossbeam"}" deps)
       (cratesIO.features_.directories."${deps."lorri"."0.1.0"."directories"}" deps)
       (cratesIO.features_.env_logger."${deps."lorri"."0.1.0"."env_logger"}" deps)
       (cratesIO.features_.futures."${deps."lorri"."0.1.0"."futures"}" deps)
@@ -90,6 +90,9 @@ rec {
   };
   deps.ansi_term."0.11.0" = {
     winapi = "0.3.6";
+  };
+  deps.arrayvec."0.4.12" = {
+    nodrop = "0.1.14";
   };
   deps.atomicwrites."0.2.3" = {
     tempdir = "0.3.7";
@@ -128,7 +131,30 @@ rec {
   deps.cloudabi."0.0.3" = {
     bitflags = "1.0.4";
   };
+  deps.crossbeam."0.7.2" = {
+    cfg_if = "0.1.6";
+    crossbeam_channel = "0.3.9";
+    crossbeam_deque = "0.7.1";
+    crossbeam_epoch = "0.7.2";
+    crossbeam_queue = "0.1.2";
+    crossbeam_utils = "0.6.6";
+  };
   deps.crossbeam_channel."0.3.9" = {
+    crossbeam_utils = "0.6.6";
+  };
+  deps.crossbeam_deque."0.7.1" = {
+    crossbeam_epoch = "0.7.2";
+    crossbeam_utils = "0.6.6";
+  };
+  deps.crossbeam_epoch."0.7.2" = {
+    arrayvec = "0.4.12";
+    cfg_if = "0.1.6";
+    crossbeam_utils = "0.6.6";
+    lazy_static = "1.2.0";
+    memoffset = "0.5.1";
+    scopeguard = "1.0.0";
+  };
+  deps.crossbeam_queue."0.1.2" = {
     crossbeam_utils = "0.6.6";
   };
   deps.crossbeam_utils."0.6.6" = {
@@ -201,7 +227,7 @@ rec {
   deps.lorri."0.1.0" = {
     atomicwrites = "0.2.3";
     bincode = "1.1.3";
-    crossbeam_channel = "0.3.9";
+    crossbeam = "0.7.2";
     directories = "1.0.2";
     env_logger = "0.6.0";
     futures = "0.1.25";
@@ -221,6 +247,9 @@ rec {
   };
   deps.md5."0.6.1" = {};
   deps.memchr."2.2.0" = {};
+  deps.memoffset."0.5.1" = {
+    rustc_version = "0.2.3";
+  };
   deps.mio."0.6.16" = {
     iovec = "0.1.2";
     lazycell = "1.2.1";
@@ -257,6 +286,7 @@ rec {
     libc = "0.2.55";
     void = "1.0.2";
   };
+  deps.nodrop."0.1.14" = {};
   deps.notify."4.0.9" = {
     bitflags = "1.0.4";
     filetime = "0.2.4";
@@ -379,6 +409,7 @@ rec {
   deps.same_file."1.0.4" = {
     winapi_util = "0.1.2";
   };
+  deps.scopeguard."1.0.0" = {};
   deps.semver."0.9.0" = {
     semver_parser = "0.7.0";
   };

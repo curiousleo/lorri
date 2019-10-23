@@ -1,4 +1,4 @@
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 extern crate lorri;
 extern crate tempfile;
 

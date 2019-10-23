@@ -55,6 +55,38 @@ rec {
 
 
 # end
+# arrayvec-0.4.12
+
+  crates.arrayvec."0.4.12" = deps: { features?(features_.arrayvec."0.4.12" deps {}) }: buildRustCrate {
+    crateName = "arrayvec";
+    version = "0.4.12";
+    description = "A vector with fixed capacity, backed by an array (it can be stored on the stack too). Implements fixed capacity ArrayVec and ArrayString.";
+    authors = [ "bluss" ];
+    sha256 = "0g11if4ihxifdiiwk6brnywkpgbvfbfwxgfqw5a407hprcq3s49f";
+    dependencies = mapFeatures features ([
+      (crates."nodrop"."${deps."arrayvec"."0.4.12"."nodrop"}" deps)
+    ]);
+    features = mkFeatures (features."arrayvec"."0.4.12" or {});
+  };
+  features_.arrayvec."0.4.12" = deps: f: updateFeatures f (rec {
+    arrayvec = fold recursiveUpdate {} [
+      { "0.4.12"."serde" =
+        (f.arrayvec."0.4.12"."serde" or false) ||
+        (f.arrayvec."0.4.12".serde-1 or false) ||
+        (arrayvec."0.4.12"."serde-1" or false); }
+      { "0.4.12"."std" =
+        (f.arrayvec."0.4.12"."std" or false) ||
+        (f.arrayvec."0.4.12".default or false) ||
+        (arrayvec."0.4.12"."default" or false); }
+      { "0.4.12".default = (f.arrayvec."0.4.12".default or true); }
+    ];
+    nodrop."${deps.arrayvec."0.4.12".nodrop}".default = (f.nodrop."${deps.arrayvec."0.4.12".nodrop}".default or false);
+  }) [
+    (features_.nodrop."${deps."arrayvec"."0.4.12"."nodrop"}" deps)
+  ];
+
+
+# end
 # atomicwrites-0.2.3
 
   crates.atomicwrites."0.2.3" = deps: { features?(features_.atomicwrites."0.2.3" deps {}) }: buildRustCrate {
@@ -446,6 +478,89 @@ rec {
 
 
 # end
+# crossbeam-0.7.2
+
+  crates.crossbeam."0.7.2" = deps: { features?(features_.crossbeam."0.7.2" deps {}) }: buildRustCrate {
+    crateName = "crossbeam";
+    version = "0.7.2";
+    description = "Tools for concurrent programming";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "07y9k9izfs17x59dg75g810lm1x5zf98a6hkzbndrr2m7sc8zw8l";
+    dependencies = mapFeatures features ([
+      (crates."cfg_if"."${deps."crossbeam"."0.7.2"."cfg_if"}" deps)
+      (crates."crossbeam_epoch"."${deps."crossbeam"."0.7.2"."crossbeam_epoch"}" deps)
+      (crates."crossbeam_utils"."${deps."crossbeam"."0.7.2"."crossbeam_utils"}" deps)
+    ]
+      ++ (if features.crossbeam."0.7.2".crossbeam-channel or false then [ (crates.crossbeam_channel."${deps."crossbeam"."0.7.2".crossbeam_channel}" deps) ] else [])
+      ++ (if features.crossbeam."0.7.2".crossbeam-deque or false then [ (crates.crossbeam_deque."${deps."crossbeam"."0.7.2".crossbeam_deque}" deps) ] else [])
+      ++ (if features.crossbeam."0.7.2".crossbeam-queue or false then [ (crates.crossbeam_queue."${deps."crossbeam"."0.7.2".crossbeam_queue}" deps) ] else []));
+    features = mkFeatures (features."crossbeam"."0.7.2" or {});
+  };
+  features_.crossbeam."0.7.2" = deps: f: updateFeatures f (rec {
+    cfg_if."${deps.crossbeam."0.7.2".cfg_if}".default = true;
+    crossbeam = fold recursiveUpdate {} [
+      { "0.7.2"."crossbeam-channel" =
+        (f.crossbeam."0.7.2"."crossbeam-channel" or false) ||
+        (f.crossbeam."0.7.2".std or false) ||
+        (crossbeam."0.7.2"."std" or false); }
+      { "0.7.2"."crossbeam-deque" =
+        (f.crossbeam."0.7.2"."crossbeam-deque" or false) ||
+        (f.crossbeam."0.7.2".std or false) ||
+        (crossbeam."0.7.2"."std" or false); }
+      { "0.7.2"."crossbeam-queue" =
+        (f.crossbeam."0.7.2"."crossbeam-queue" or false) ||
+        (f.crossbeam."0.7.2".std or false) ||
+        (crossbeam."0.7.2"."std" or false); }
+      { "0.7.2"."std" =
+        (f.crossbeam."0.7.2"."std" or false) ||
+        (f.crossbeam."0.7.2".default or false) ||
+        (crossbeam."0.7.2"."default" or false); }
+      { "0.7.2".default = (f.crossbeam."0.7.2".default or true); }
+    ];
+    crossbeam_channel."${deps.crossbeam."0.7.2".crossbeam_channel}".default = true;
+    crossbeam_deque."${deps.crossbeam."0.7.2".crossbeam_deque}".default = true;
+    crossbeam_epoch = fold recursiveUpdate {} [
+      { "${deps.crossbeam."0.7.2".crossbeam_epoch}"."alloc" =
+        (f.crossbeam_epoch."${deps.crossbeam."0.7.2".crossbeam_epoch}"."alloc" or false) ||
+        (crossbeam."0.7.2"."alloc" or false) ||
+        (f."crossbeam"."0.7.2"."alloc" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_epoch}"."nightly" =
+        (f.crossbeam_epoch."${deps.crossbeam."0.7.2".crossbeam_epoch}"."nightly" or false) ||
+        (crossbeam."0.7.2"."nightly" or false) ||
+        (f."crossbeam"."0.7.2"."nightly" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_epoch}"."std" =
+        (f.crossbeam_epoch."${deps.crossbeam."0.7.2".crossbeam_epoch}"."std" or false) ||
+        (crossbeam."0.7.2"."std" or false) ||
+        (f."crossbeam"."0.7.2"."std" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_epoch}".default = (f.crossbeam_epoch."${deps.crossbeam."0.7.2".crossbeam_epoch}".default or false); }
+    ];
+    crossbeam_queue."${deps.crossbeam."0.7.2".crossbeam_queue}".default = true;
+    crossbeam_utils = fold recursiveUpdate {} [
+      { "${deps.crossbeam."0.7.2".crossbeam_utils}"."alloc" =
+        (f.crossbeam_utils."${deps.crossbeam."0.7.2".crossbeam_utils}"."alloc" or false) ||
+        (crossbeam."0.7.2"."alloc" or false) ||
+        (f."crossbeam"."0.7.2"."alloc" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_utils}"."nightly" =
+        (f.crossbeam_utils."${deps.crossbeam."0.7.2".crossbeam_utils}"."nightly" or false) ||
+        (crossbeam."0.7.2"."nightly" or false) ||
+        (f."crossbeam"."0.7.2"."nightly" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_utils}"."std" =
+        (f.crossbeam_utils."${deps.crossbeam."0.7.2".crossbeam_utils}"."std" or false) ||
+        (crossbeam."0.7.2"."std" or false) ||
+        (f."crossbeam"."0.7.2"."std" or false); }
+      { "${deps.crossbeam."0.7.2".crossbeam_utils}".default = (f.crossbeam_utils."${deps.crossbeam."0.7.2".crossbeam_utils}".default or false); }
+    ];
+  }) [
+    (features_.cfg_if."${deps."crossbeam"."0.7.2"."cfg_if"}" deps)
+    (features_.crossbeam_channel."${deps."crossbeam"."0.7.2"."crossbeam_channel"}" deps)
+    (features_.crossbeam_deque."${deps."crossbeam"."0.7.2"."crossbeam_deque"}" deps)
+    (features_.crossbeam_epoch."${deps."crossbeam"."0.7.2"."crossbeam_epoch"}" deps)
+    (features_.crossbeam_queue."${deps."crossbeam"."0.7.2"."crossbeam_queue"}" deps)
+    (features_.crossbeam_utils."${deps."crossbeam"."0.7.2"."crossbeam_utils"}" deps)
+  ];
+
+
+# end
 # crossbeam-channel-0.3.9
 
   crates.crossbeam_channel."0.3.9" = deps: { features?(features_.crossbeam_channel."0.3.9" deps {}) }: buildRustCrate {
@@ -463,6 +578,118 @@ rec {
     crossbeam_utils."${deps.crossbeam_channel."0.3.9".crossbeam_utils}".default = true;
   }) [
     (features_.crossbeam_utils."${deps."crossbeam_channel"."0.3.9"."crossbeam_utils"}" deps)
+  ];
+
+
+# end
+# crossbeam-deque-0.7.1
+
+  crates.crossbeam_deque."0.7.1" = deps: { features?(features_.crossbeam_deque."0.7.1" deps {}) }: buildRustCrate {
+    crateName = "crossbeam-deque";
+    version = "0.7.1";
+    description = "Concurrent work-stealing deque";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "11l7idrx3diksrxbaa13f9h9i6f3456qq3647f3kglxfjmz9bm8s";
+    dependencies = mapFeatures features ([
+      (crates."crossbeam_epoch"."${deps."crossbeam_deque"."0.7.1"."crossbeam_epoch"}" deps)
+      (crates."crossbeam_utils"."${deps."crossbeam_deque"."0.7.1"."crossbeam_utils"}" deps)
+    ]);
+  };
+  features_.crossbeam_deque."0.7.1" = deps: f: updateFeatures f (rec {
+    crossbeam_deque."0.7.1".default = (f.crossbeam_deque."0.7.1".default or true);
+    crossbeam_epoch."${deps.crossbeam_deque."0.7.1".crossbeam_epoch}".default = true;
+    crossbeam_utils."${deps.crossbeam_deque."0.7.1".crossbeam_utils}".default = true;
+  }) [
+    (features_.crossbeam_epoch."${deps."crossbeam_deque"."0.7.1"."crossbeam_epoch"}" deps)
+    (features_.crossbeam_utils."${deps."crossbeam_deque"."0.7.1"."crossbeam_utils"}" deps)
+  ];
+
+
+# end
+# crossbeam-epoch-0.7.2
+
+  crates.crossbeam_epoch."0.7.2" = deps: { features?(features_.crossbeam_epoch."0.7.2" deps {}) }: buildRustCrate {
+    crateName = "crossbeam-epoch";
+    version = "0.7.2";
+    description = "Epoch-based garbage collection";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "015axh69r6ggj481ncqj09d7ssbqf8psgyqq9hhpkrh3j7xn4vmn";
+    dependencies = mapFeatures features ([
+      (crates."arrayvec"."${deps."crossbeam_epoch"."0.7.2"."arrayvec"}" deps)
+      (crates."cfg_if"."${deps."crossbeam_epoch"."0.7.2"."cfg_if"}" deps)
+      (crates."crossbeam_utils"."${deps."crossbeam_epoch"."0.7.2"."crossbeam_utils"}" deps)
+      (crates."memoffset"."${deps."crossbeam_epoch"."0.7.2"."memoffset"}" deps)
+      (crates."scopeguard"."${deps."crossbeam_epoch"."0.7.2"."scopeguard"}" deps)
+    ]
+      ++ (if features.crossbeam_epoch."0.7.2".lazy_static or false then [ (crates.lazy_static."${deps."crossbeam_epoch"."0.7.2".lazy_static}" deps) ] else []));
+    features = mkFeatures (features."crossbeam_epoch"."0.7.2" or {});
+  };
+  features_.crossbeam_epoch."0.7.2" = deps: f: updateFeatures f (rec {
+    arrayvec = fold recursiveUpdate {} [
+      { "${deps.crossbeam_epoch."0.7.2".arrayvec}"."use_union" =
+        (f.arrayvec."${deps.crossbeam_epoch."0.7.2".arrayvec}"."use_union" or false) ||
+        (crossbeam_epoch."0.7.2"."nightly" or false) ||
+        (f."crossbeam_epoch"."0.7.2"."nightly" or false); }
+      { "${deps.crossbeam_epoch."0.7.2".arrayvec}".default = (f.arrayvec."${deps.crossbeam_epoch."0.7.2".arrayvec}".default or false); }
+    ];
+    cfg_if."${deps.crossbeam_epoch."0.7.2".cfg_if}".default = true;
+    crossbeam_epoch = fold recursiveUpdate {} [
+      { "0.7.2"."lazy_static" =
+        (f.crossbeam_epoch."0.7.2"."lazy_static" or false) ||
+        (f.crossbeam_epoch."0.7.2".std or false) ||
+        (crossbeam_epoch."0.7.2"."std" or false); }
+      { "0.7.2"."std" =
+        (f.crossbeam_epoch."0.7.2"."std" or false) ||
+        (f.crossbeam_epoch."0.7.2".default or false) ||
+        (crossbeam_epoch."0.7.2"."default" or false); }
+      { "0.7.2".default = (f.crossbeam_epoch."0.7.2".default or true); }
+    ];
+    crossbeam_utils = fold recursiveUpdate {} [
+      { "${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."alloc" =
+        (f.crossbeam_utils."${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."alloc" or false) ||
+        (crossbeam_epoch."0.7.2"."alloc" or false) ||
+        (f."crossbeam_epoch"."0.7.2"."alloc" or false); }
+      { "${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."nightly" =
+        (f.crossbeam_utils."${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."nightly" or false) ||
+        (crossbeam_epoch."0.7.2"."nightly" or false) ||
+        (f."crossbeam_epoch"."0.7.2"."nightly" or false); }
+      { "${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."std" =
+        (f.crossbeam_utils."${deps.crossbeam_epoch."0.7.2".crossbeam_utils}"."std" or false) ||
+        (crossbeam_epoch."0.7.2"."std" or false) ||
+        (f."crossbeam_epoch"."0.7.2"."std" or false); }
+      { "${deps.crossbeam_epoch."0.7.2".crossbeam_utils}".default = (f.crossbeam_utils."${deps.crossbeam_epoch."0.7.2".crossbeam_utils}".default or false); }
+    ];
+    lazy_static."${deps.crossbeam_epoch."0.7.2".lazy_static}".default = true;
+    memoffset."${deps.crossbeam_epoch."0.7.2".memoffset}".default = true;
+    scopeguard."${deps.crossbeam_epoch."0.7.2".scopeguard}".default = (f.scopeguard."${deps.crossbeam_epoch."0.7.2".scopeguard}".default or false);
+  }) [
+    (features_.arrayvec."${deps."crossbeam_epoch"."0.7.2"."arrayvec"}" deps)
+    (features_.cfg_if."${deps."crossbeam_epoch"."0.7.2"."cfg_if"}" deps)
+    (features_.crossbeam_utils."${deps."crossbeam_epoch"."0.7.2"."crossbeam_utils"}" deps)
+    (features_.lazy_static."${deps."crossbeam_epoch"."0.7.2"."lazy_static"}" deps)
+    (features_.memoffset."${deps."crossbeam_epoch"."0.7.2"."memoffset"}" deps)
+    (features_.scopeguard."${deps."crossbeam_epoch"."0.7.2"."scopeguard"}" deps)
+  ];
+
+
+# end
+# crossbeam-queue-0.1.2
+
+  crates.crossbeam_queue."0.1.2" = deps: { features?(features_.crossbeam_queue."0.1.2" deps {}) }: buildRustCrate {
+    crateName = "crossbeam-queue";
+    version = "0.1.2";
+    description = "Concurrent queues";
+    authors = [ "The Crossbeam Project Developers" ];
+    sha256 = "1hannzr5w6j5061kg5iba4fzi6f2xpqv7bkcspfq17y1i8g0mzjj";
+    dependencies = mapFeatures features ([
+      (crates."crossbeam_utils"."${deps."crossbeam_queue"."0.1.2"."crossbeam_utils"}" deps)
+    ]);
+  };
+  features_.crossbeam_queue."0.1.2" = deps: f: updateFeatures f (rec {
+    crossbeam_queue."0.1.2".default = (f.crossbeam_queue."0.1.2".default or true);
+    crossbeam_utils."${deps.crossbeam_queue."0.1.2".crossbeam_utils}".default = true;
+  }) [
+    (features_.crossbeam_utils."${deps."crossbeam_queue"."0.1.2"."crossbeam_utils"}" deps)
   ];
 
 
@@ -1112,6 +1339,28 @@ rec {
 
 
 # end
+# memoffset-0.5.1
+
+  crates.memoffset."0.5.1" = deps: { features?(features_.memoffset."0.5.1" deps {}) }: buildRustCrate {
+    crateName = "memoffset";
+    version = "0.5.1";
+    description = "offset_of functionality for Rust structs.";
+    authors = [ "Gilad Naaman <gilad.naaman@gmail.com>" ];
+    sha256 = "0fsk7kfk193f1aamafl45vvcp7j6p7c14ss7d583fijw3w5kj69k";
+
+    buildDependencies = mapFeatures features ([
+      (crates."rustc_version"."${deps."memoffset"."0.5.1"."rustc_version"}" deps)
+    ]);
+  };
+  features_.memoffset."0.5.1" = deps: f: updateFeatures f (rec {
+    memoffset."0.5.1".default = (f.memoffset."0.5.1".default or true);
+    rustc_version."${deps.memoffset."0.5.1".rustc_version}".default = true;
+  }) [
+    (features_.rustc_version."${deps."memoffset"."0.5.1"."rustc_version"}" deps)
+  ];
+
+
+# end
 # mio-0.6.16
 
   crates.mio."0.6.16" = deps: { features?(features_.mio."0.6.16" deps {}) }: buildRustCrate {
@@ -1312,6 +1561,34 @@ rec {
     (features_.libc."${deps."nix"."0.14.0"."libc"}" deps)
     (features_.void."${deps."nix"."0.14.0"."void"}" deps)
   ];
+
+
+# end
+# nodrop-0.1.14
+
+  crates.nodrop."0.1.14" = deps: { features?(features_.nodrop."0.1.14" deps {}) }: buildRustCrate {
+    crateName = "nodrop";
+    version = "0.1.14";
+    description = "A wrapper type to inhibit drop (destructor).\n\n***Deprecated: Use ManuallyDrop or MaybeUninit instead!***\n";
+    authors = [ "bluss" ];
+    sha256 = "0b4adir378n2irr76z8grc9jxif8vlyy01rid8j4r716y9y4dg9r";
+    dependencies = mapFeatures features ([
+]);
+    features = mkFeatures (features."nodrop"."0.1.14" or {});
+  };
+  features_.nodrop."0.1.14" = deps: f: updateFeatures f (rec {
+    nodrop = fold recursiveUpdate {} [
+      { "0.1.14"."nodrop-union" =
+        (f.nodrop."0.1.14"."nodrop-union" or false) ||
+        (f.nodrop."0.1.14".use_union or false) ||
+        (nodrop."0.1.14"."use_union" or false); }
+      { "0.1.14"."std" =
+        (f.nodrop."0.1.14"."std" or false) ||
+        (f.nodrop."0.1.14".default or false) ||
+        (nodrop."0.1.14"."default" or false); }
+      { "0.1.14".default = (f.nodrop."0.1.14".default or true); }
+    ];
+  }) [];
 
 
 # end
@@ -2384,6 +2661,28 @@ rec {
   }) [
     (features_.winapi_util."${deps."same_file"."1.0.4"."winapi_util"}" deps)
   ];
+
+
+# end
+# scopeguard-1.0.0
+
+  crates.scopeguard."1.0.0" = deps: { features?(features_.scopeguard."1.0.0" deps {}) }: buildRustCrate {
+    crateName = "scopeguard";
+    version = "1.0.0";
+    description = "A RAII scope guard that will run a given closure when it goes out of scope,\neven if the code between panics (assuming unwinding panic).\n\nDefines the macros `defer!`, `defer_on_unwind!`, `defer_on_success!` as\nshorthands for guards with one of the implemented strategies.\n";
+    authors = [ "bluss" ];
+    sha256 = "15vrix0jx3i4naqnjswddzn4m036krrv71a8vkh3b1zq4hxmrb0q";
+    features = mkFeatures (features."scopeguard"."1.0.0" or {});
+  };
+  features_.scopeguard."1.0.0" = deps: f: updateFeatures f (rec {
+    scopeguard = fold recursiveUpdate {} [
+      { "1.0.0"."use_std" =
+        (f.scopeguard."1.0.0"."use_std" or false) ||
+        (f.scopeguard."1.0.0".default or false) ||
+        (scopeguard."1.0.0"."default" or false); }
+      { "1.0.0".default = (f.scopeguard."1.0.0".default or true); }
+    ];
+  }) [];
 
 
 # end

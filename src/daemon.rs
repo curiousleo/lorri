@@ -1,6 +1,6 @@
 //! The lorri daemon, watches multiple projects in the background.
 
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 
 use crate::build_loop::BuildLoop;
 use crate::project::Project;

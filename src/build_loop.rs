@@ -1,7 +1,7 @@
 //! Uses `builder` and filesystem watch code to repeatedly
 //! evaluate and build a given Nix file.
 
-extern crate crossbeam_channel as chan;
+extern crate crossbeam as chan;
 
 use crate::builder;
 use crate::builder::RunStatus;
