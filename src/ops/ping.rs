@@ -9,6 +9,8 @@ use crate::socket::communicate::{Ping, DEFAULT_READ_TIMEOUT};
 /// See the documentation for lorri::cli::Command::Shell for more
 /// details.
 pub fn main(nix_file: NixFile) -> OpResult {
+    let nix_file_canonical =
+        std::fs::canonicalize(nix_file).expect("could not canonicalize path to nix file");
     // TODO: set up socket path, make it settable by the user
     client::ping(DEFAULT_READ_TIMEOUT)
         // TODO
@@ -16,7 +18,9 @@ pub fn main(nix_file: NixFile) -> OpResult {
             ::ops::get_paths()?.daemon_socket_file(),
         ))
         .unwrap()
-        .write(&Ping { nix_file })
+        .write(&Ping {
+            nix_file: NixFile::from(nix_file_canonical),
+        })
         .unwrap();
     ok()
 }
