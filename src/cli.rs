@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 use NixFile;
+use try_nixfile_from_os_str;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "lorri")]
@@ -87,7 +88,7 @@ pub struct WatchOptions {
 #[derive(StructOpt, Debug)]
 pub struct Ping_ {
     /// The .nix file to watch and build on changes.
-    #[structopt(parse(from_os_str))]
+    #[structopt(parse(try_from_os_str = try_nixfile_from_os_str))]
     pub nix_file: NixFile,
 }
 
