@@ -76,7 +76,6 @@ impl std::fmt::Display for NixFile {
 pub(crate) fn try_nixfile_from_os_str(s: &std::ffi::OsStr) -> Result<NixFile,std::ffi::OsString> {
     NixFile::try_from(s)
         .map_err(|e| std::ffi::OsString::from(e.to_string()))
-    // std::ffi::OsString::from(NixFile::try_from(s).as_os_str())
 }
 
 impl std::convert::TryFrom<&std::ffi::OsStr> for NixFile {

@@ -4,12 +4,12 @@ extern crate structopt;
 extern crate log;
 
 use lorri::constants;
-use lorri::locate_file;
 use lorri::NixFile;
 
 use lorri::cli::{Arguments, Command};
 use lorri::ops::{daemon, direnv, info, init, ping, upgrade, watch, ExitError, OpResult};
 use lorri::project::Project;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -43,7 +43,7 @@ fn main() {
 /// Try to read `shell.nix` from the current working dir.
 fn get_shell_nix(shellfile: &PathBuf) -> Result<NixFile, ExitError> {
     // use shell.nix from cwd
-    Ok(NixFile::from(locate_file::in_cwd(&shellfile).map_err(
+    NixFile::try_from(shellfile.clone()).map_err(
         |_| {
             ExitError::errmsg(format!(
                 "`{}` does not exist\n\
@@ -53,7 +53,7 @@ fn get_shell_nix(shellfile: &PathBuf) -> Result<NixFile, ExitError> {
                 TRIVIAL_SHELL_SRC
             ))
         },
-    )?))
+    )
 }
 
 fn create_project(paths: &constants::Paths, shell_nix: NixFile) -> Result<Project, ExitError> {
