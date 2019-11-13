@@ -8,7 +8,7 @@ use crate::pathreduction::reduce_paths;
 use crate::project::roots;
 use crate::project::roots::Roots;
 use crate::project::Project;
-use crate::watch::{DebugMessage, RawEventError, Reason, Watch};
+use crate::watch::{DebugMessage, EventError, Reason, Watch};
 use crossbeam_channel as chan;
 use std::path::PathBuf;
 
@@ -68,15 +68,15 @@ impl<'a> BuildLoop<'a> {
         let translate_reason = |rsn| match rsn {
             Ok(rsn) => rsn,
             // we should continue and just cite an unknown reason
-            Err(RawEventError::EventHasNoFilePath(msg)) => {
+            Err(EventError::EventHasNoFilePath(msg)) => {
                 warn!(
                     "Event has no file path; possible issue with the watcher?: {:#?}",
                     msg
                 );
-                // can’t Clone RawEvents, so we return the Debug output here
+                // can’t Clone `Event`s, so we return the Debug output here
                 Reason::UnknownEvent(DebugMessage::from(format!("{:#?}", msg)))
             }
-            Err(RawEventError::RxNoEventReceived) => {
+            Err(EventError::RxNoEventReceived) => {
                 panic!("The file watcher died!");
             }
         };
