@@ -144,6 +144,7 @@ rec {
   deps.ansi_term."0.11.0" = {
     winapi = "0.3.6";
   };
+  deps.anymap."0.12.1" = {};
   deps.atomicwrites."0.2.3" = {
     tempdir = "0.3.7";
     nix = "0.14.0";
@@ -174,11 +175,14 @@ rec {
     bit_vec = "0.5.0";
   };
   deps.bit_vec."0.5.0" = {};
-  deps.bitflags."0.7.0" = {};
   deps.bitflags."1.0.4" = {};
   deps.byteorder."1.3.1" = {};
   deps.cc."1.0.37" = {};
   deps.cfg_if."0.1.6" = {};
+  deps.chashmap."2.2.2" = {
+    owning_ref = "0.3.3";
+    parking_lot = "0.4.8";
+  };
   deps.clap."2.32.0" = {
     atty = "0.2.11";
     bitflags = "1.0.4";
@@ -209,18 +213,18 @@ rec {
     regex = "1.1.0";
     termcolor = "1.0.4";
   };
-  deps.filetime."0.2.4" = {
+  deps.filetime."0.2.8" = {
     cfg_if = "0.1.6";
     redox_syscall = "0.1.51";
     libc = "0.2.55";
+    winapi = "0.3.6";
   };
   deps.fnv."1.0.6" = {};
-  deps.fsevent."0.2.17" = {
-    bitflags = "0.7.0";
-    fsevent_sys = "0.1.6";
-    libc = "0.2.55";
+  deps.fsevent."0.4.0" = {
+    bitflags = "1.0.4";
+    fsevent_sys = "2.0.1";
   };
-  deps.fsevent_sys."0.1.6" = {
+  deps.fsevent_sys."2.0.1" = {
     libc = "0.2.55";
   };
   deps.fuchsia_cprng."0.1.1" = {};
@@ -245,7 +249,7 @@ rec {
   deps.humantime."1.2.0" = {
     quick_error = "1.2.2";
   };
-  deps.inotify."0.6.1" = {
+  deps.inotify."0.7.0" = {
     bitflags = "1.0.4";
     inotify_sys = "0.1.3";
     libc = "0.2.55";
@@ -282,7 +286,7 @@ rec {
     log = "0.4.6";
     md5 = "0.6.1";
     nix = "0.14.0";
-    notify = "4.0.9";
+    notify = "5.0.0-pre.1";
     proptest = "0.9.1";
     regex = "1.1.0";
     serde = "1.0.88";
@@ -292,6 +296,7 @@ rec {
     tempfile = "3.0.7";
     vec1 = "1.1.0";
   };
+  deps.maybe_uninit."2.0.0" = {};
   deps.md5."0.6.1" = {};
   deps.memchr."2.2.0" = {};
   deps.mio."0.6.16" = {
@@ -330,22 +335,38 @@ rec {
     libc = "0.2.55";
     void = "1.0.2";
   };
-  deps.notify."4.0.9" = {
+  deps.notify."5.0.0-pre.1" = {
+    anymap = "0.12.1";
     bitflags = "1.0.4";
-    filetime = "0.2.4";
+    chashmap = "2.2.2";
+    crossbeam_channel = "0.3.9";
+    filetime = "0.2.8";
     libc = "0.2.55";
     walkdir = "2.2.7";
-    inotify = "0.6.1";
+    inotify = "0.7.0";
     mio = "0.6.16";
     mio_extras = "2.0.5";
-    fsevent = "0.2.17";
-    fsevent_sys = "0.1.6";
+    fsevent = "0.4.0";
+    fsevent_sys = "2.0.1";
     kernel32_sys = "0.2.2";
     winapi = "0.3.6";
   };
   deps.num_traits."0.2.6" = {};
   deps.os_type."2.2.0" = {
     regex = "1.1.0";
+  };
+  deps.owning_ref."0.3.3" = {
+    stable_deref_trait = "1.1.1";
+  };
+  deps.parking_lot."0.4.8" = {
+    owning_ref = "0.3.3";
+    parking_lot_core = "0.2.14";
+  };
+  deps.parking_lot_core."0.2.14" = {
+    rand = "0.4.6";
+    smallvec = "0.6.13";
+    libc = "0.2.55";
+    winapi = "0.3.6";
   };
   deps.proc_macro2."0.4.27" = {
     unicode_xid = "0.1.0";
@@ -472,7 +493,11 @@ rec {
     serde = "1.0.88";
   };
   deps.slab."0.4.2" = {};
+  deps.smallvec."0.6.13" = {
+    maybe_uninit = "2.0.0";
+  };
   deps.spin."0.4.10" = {};
+  deps.stable_deref_trait."1.1.1" = {};
   deps.strsim."0.7.0" = {};
   deps.structopt."0.2.14" = {
     clap = "2.32.0";
