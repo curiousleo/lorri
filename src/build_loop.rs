@@ -63,25 +63,37 @@ impl<'a> BuildLoop<'a> {
     /// Sends `Event`s over `Self.tx` once they happen.
     /// When new filesystem changes are detected while a build is
     /// still running, it is finished first before starting a new build.
-    pub fn forever(&mut self, tx: chan::Sender<Event>, rx: chan::Receiver<()>) {
+    pub fn forever(&mut self, tx: chan::Sender<Event>, rx_ping: chan::Receiver<()>) {
         let send = |msg| tx.send(msg).expect("Failed to send an event");
+        let translate_reason = |rsn| match rsn {
+            Ok(rsn) => rsn,
+            // we should continue and just cite an unknown reason
+            Err(RawEventError::EventHasNoFilePath(msg)) => {
+                warn!(
+                    "Event has no file path; possible issue with the watcher?: {:#?}",
+                    msg
+                );
+                // can’t Clone RawEvents, so we return the Debug output here
+                Reason::UnknownEvent(DebugMessage::from(format!("{:#?}", msg)))
+            }
+            Err(RawEventError::RxNoEventReceived) => {
+                panic!("The file watcher died!");
+            }
+        };
 
-        send(Event::Started(Reason::ProjectAdded(
+        // The project has just been added, so run the builder in the first iteration
+        let mut reason = Some(Event::Started(Reason::ProjectAdded(
             self.project.nix_file.clone(),
         )));
 
-        // The project has just been added, so run the builder
-        let mut run = true;
+        // Drain pings to avoid unnecessarily building the project multiple times
+        rx_ping.try_iter().for_each(drop);
+
+        let rx_notify_raw = self.watch.rx.clone();
 
         loop {
-            // Drain the message queue, but only send PingReceived if we're not already building
-            // the project for some other reason
-            if rx.try_recv().into_iter().count() > 0 && !run {
-                send(Event::Started(Reason::PingReceived));
-                run = true;
-            }
-
-            if run {
+            if let Some(rsn) = reason {
+                send(rsn);
                 match self.once() {
                     Ok(result) => send(Event::Completed(result)),
                     Err(BuildError::Recoverable(failure)) => send(Event::Failure(failure)),
@@ -89,35 +101,23 @@ impl<'a> BuildLoop<'a> {
                         panic!("Unrecoverable error:\n{:#?}", err);
                     }
                 }
-                run = false;
+                reason = None;
             }
 
-            // block_timeout returns Some iff a change was registered before the timeout
-            if let Some(reason) = self
-                .watch
-                .block_timeout(std::time::Duration::from_millis(100))
-                .map(|r| match r {
-                    Ok(r) => r,
-                    // we should continue and just cite an unknown reason
-                    Err(RawEventError::EventHasNoFilePath(msg)) => {
-                        warn!(
-                            "Event has no file path; possible issue with the watcher?: {:#?}",
-                            msg
-                        );
-                        // can’t Clone RawEvents, so we return the Debug output here
-                        Reason::UnknownEvent(DebugMessage::from(format!("{:#?}", msg)))
-                    }
-                    Err(RawEventError::RxNoEventReceived) => {
-                        panic!("The file watcher died!");
-                    }
-                })
+            // Sadly, clippy does not realise that these unsafe operations are triggered by the
+            // macro and are in fact perfectly fine.
+            #[allow(clippy::drop_copy, clippy::zero_ptr)]
             {
-                // TODO: Make err use Display instead of Debug.
-                // Otherwise user errors (especially for IO errors)
-                // are pretty hard to debug. Might need to review
-                // whether we can handle some errors earlier than here.
-                send(Event::Started(reason));
-                run = true;
+                chan::select! {
+                    recv(rx_notify_raw) -> msg => if let Ok(msg) = msg {
+                        if let Some(rsn) = self.watch.process(msg) {
+                            reason = Some(Event::Started(translate_reason(rsn)));
+                        }
+                    },
+                    recv(rx_ping) -> msg => if let Ok(()) = msg {
+                        reason = Some(Event::Started(Reason::PingReceived));
+                    },
+                }
             }
         }
     }

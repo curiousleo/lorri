@@ -12,8 +12,9 @@ use std::time::Duration;
 /// A dynamic list of paths to watch for changes, and
 /// react to changes when they occur.
 pub struct Watch {
+    /// Raw event receiver. Process using `Watch::process`.
+    pub rx: chan::Receiver<notify::RawEvent>,
     notify: RecommendedWatcher,
-    rx: chan::Receiver<notify::RawEvent>,
     watches: HashSet<PathBuf>,
 }
 
@@ -63,6 +64,21 @@ impl Watch {
             watches: HashSet::new(),
             rx,
         })
+    }
+
+    /// Process `notify::RawEvent`s coming in via `Watch::rx`.
+    pub fn process(&self, event: notify::RawEvent) -> Option<Result<Reason, RawEventError>> {
+        if self.event_is_interesting(&event) {
+            self.handle_event(&event);
+            let count_of_changes = self.process_ready();
+            let path = event.path.clone();
+            Some(
+                path.map(|p| Reason::FilesChanged(p, count_of_changes))
+                    .ok_or_else(|| RawEventError::EventHasNoFilePath(event)),
+            )
+        } else {
+            None
+        }
     }
 
     /// Extend the watch list with an additional list of paths.
