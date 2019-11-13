@@ -8,7 +8,7 @@ use crate::pathreduction::reduce_paths;
 use crate::project::roots;
 use crate::project::roots::Roots;
 use crate::project::Project;
-use crate::watch::{DebugMessage, RawEventError, Reason, Watch};
+use crate::watch::{DebugMessage, EventError, Reason, Watch};
 use crossbeam_channel as chan;
 use std::path::PathBuf;
 
@@ -63,43 +63,62 @@ impl<'a> BuildLoop<'a> {
     /// Sends `Event`s over `Self.tx` once they happen.
     /// When new filesystem changes are detected while a build is
     /// still running, it is finished first before starting a new build.
-    pub fn forever(&mut self, tx: chan::Sender<Event>) {
+    pub fn forever(&mut self, tx: chan::Sender<Event>, rx_ping: chan::Receiver<()>) {
         let send = |msg| tx.send(msg).expect("Failed to send an event");
+        let translate_reason = |rsn| match rsn {
+            Ok(rsn) => rsn,
+            // we should continue and just cite an unknown reason
+            Err(EventError::EventHasNoFilePath(msg)) => {
+                warn!(
+                    "Event has no file path; possible issue with the watcher?: {:#?}",
+                    msg
+                );
+                // can’t Clone `Event`s, so we return the Debug output here
+                Reason::UnknownEvent(DebugMessage::from(format!("{:#?}", msg)))
+            }
+            Err(EventError::RxNoEventReceived) => {
+                panic!("The file watcher died!");
+            }
+        };
 
-        send(Event::Started(Reason::ProjectAdded(
+        // The project has just been added, so run the builder in the first iteration
+        let mut reason = Some(Event::Started(Reason::ProjectAdded(
             self.project.nix_file.clone(),
         )));
 
+        // Drain pings to avoid unnecessarily building the project multiple times
+        rx_ping.try_iter().for_each(drop);
+
+        let rx_notify_raw = self.watch.rx.clone();
+
         loop {
-            match self.once() {
-                Ok(result) => send(Event::Completed(result)),
-                Err(BuildError::Recoverable(failure)) => send(Event::Failure(failure)),
-                Err(BuildError::Unrecoverable(err)) => {
-                    panic!("Unrecoverable error:\n{:#?}", err);
+            if let Some(rsn) = reason {
+                send(rsn);
+                match self.once() {
+                    Ok(result) => send(Event::Completed(result)),
+                    Err(BuildError::Recoverable(failure)) => send(Event::Failure(failure)),
+                    Err(BuildError::Unrecoverable(err)) => {
+                        panic!("Unrecoverable error:\n{:#?}", err);
+                    }
                 }
+                reason = None;
             }
 
-            let reason = match self.watch.wait_for_change() {
-                Ok(r) => r,
-                // we should continue and just cite an unknown reason
-                Err(RawEventError::EventHasNoFilePath(msg)) => {
-                    warn!(
-                        "Event has no file path; possible issue with the watcher?: {:#?}",
-                        msg
-                    );
-                    // can’t Clone RawEvents, so we return the Debug output here
-                    Reason::UnknownEvent(DebugMessage::from(format!("{:#?}", msg)))
+            // Sadly, clippy does not realise that these unsafe operations are triggered by the
+            // macro and are in fact perfectly fine.
+            #[allow(clippy::drop_copy, clippy::zero_ptr)]
+            {
+                chan::select! {
+                    recv(rx_notify_raw) -> msg => if let Ok(msg) = msg {
+                        if let Some(rsn) = self.watch.process(msg) {
+                            reason = Some(Event::Started(translate_reason(rsn)));
+                        }
+                    },
+                    recv(rx_ping) -> msg => if let Ok(()) = msg {
+                        reason = Some(Event::Started(Reason::PingReceived));
+                    },
                 }
-                Err(RawEventError::RxNoEventReceived) => {
-                    panic!("The file watcher died!");
-                }
-            };
-
-            // TODO: Make err use Display instead of Debug.
-            // Otherwise user errors (especially for IO errors)
-            // are pretty hard to debug. Might need to review
-            // whether we can handle some errors earlier than here.
-            send(Event::Started(reason));
+            }
         }
     }
 
