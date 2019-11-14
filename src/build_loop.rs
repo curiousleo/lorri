@@ -85,17 +85,22 @@ impl<'a> BuildLoop<'a> {
         let mut reason = Some(Event::Started(Reason::ProjectAdded(
             self.project.nix_file.clone(),
         )));
+        let mut output_paths = None;
 
-        // Drain pings to avoid unnecessarily building the project multiple times
+        // Drain pings initially: we're going to trigger a first build anyway
         rx_ping.try_iter().for_each(drop);
 
         let rx_notify_raw = self.watch.rx.clone();
 
         loop {
+            // If there is some reason to build, run the build!
             if let Some(rsn) = reason {
                 send(rsn);
                 match self.once() {
-                    Ok(result) => send(Event::Completed(result)),
+                    Ok(result) => {
+                        output_paths = Some(result.output_paths.clone());
+                        send(Event::Completed(result));
+                    },
                     Err(BuildError::Recoverable(failure)) => send(Event::Failure(failure)),
                     Err(BuildError::Unrecoverable(err)) => {
                         panic!("Unrecoverable error:\n{:#?}", err);
@@ -104,8 +109,8 @@ impl<'a> BuildLoop<'a> {
                 reason = None;
             }
 
-            // Sadly, clippy does not realise that these unsafe operations are triggered by the
-            // macro and are in fact perfectly fine.
+            // Sadly, clippy does not realise that these operations are triggered by the macro and
+            // are in fact perfectly fine
             #[allow(clippy::drop_copy, clippy::zero_ptr)]
             {
                 chan::select! {
@@ -114,8 +119,10 @@ impl<'a> BuildLoop<'a> {
                             reason = Some(Event::Started(translate_reason(rsn)));
                         }
                     },
-                    recv(rx_ping) -> msg => if let Ok(()) = msg {
-                        reason = Some(Event::Started(Reason::PingReceived));
+                    recv(rx_ping) -> msg => if let (Ok(()), Some(output_paths)) = (msg, &output_paths) {
+                        if !output_paths.shell_gc_root_is_dir() {
+                            reason = Some(Event::Started(Reason::PingReceived));
+                        }
                     },
                 }
             }
