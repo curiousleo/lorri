@@ -2,8 +2,6 @@ extern crate lorri;
 extern crate structopt;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate human_panic;
 
 use lorri::constants;
 use lorri::locate_file;
@@ -20,9 +18,6 @@ const TRIVIAL_SHELL_SRC: &str = include_str!("./trivial-shell.nix");
 const DEFAULT_ENVRC: &str = "eval \"$(lorri direnv)\"";
 
 fn main() {
-    // This returns 101 on panics, see also `ExitError::panic`.
-    setup_panic!();
-
     let exit = |result: OpResult| match result {
         Err(err) => {
             eprintln!("{}", err.message());

@@ -27,6 +27,3 @@ serde_json = "1.0.38"
 structopt = "0.2"
 tempfile = "3.0.7"
 vec1 = "1.1.0"
-# pinned to a git commit pending v2.0 release
-# see: https://github.com/rust-cli/human-panic/issues/46
-human-panic = { git = "https://github.com/rust-cli/human-panic.git", rev = "70db9489" }
