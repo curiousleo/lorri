@@ -5,6 +5,7 @@ extern crate log;
 
 use lorri::constants;
 use lorri::locate_file;
+use lorri::panic;
 use lorri::NixFile;
 
 use lorri::cli::{Arguments, Command};
@@ -18,6 +19,7 @@ const TRIVIAL_SHELL_SRC: &str = include_str!("./trivial-shell.nix");
 const DEFAULT_ENVRC: &str = "eval \"$(lorri direnv)\"";
 
 fn main() {
+    panic::install_hook();
     let exit = |result: OpResult| match result {
         Err(err) => {
             eprintln!("{}", err.message());

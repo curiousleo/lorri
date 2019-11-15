@@ -16,6 +16,7 @@ rec {
       src = exclude [ ".git" "target" ] ./.;
       dependencies = mapFeatures features ([
         (cratesIO.crates."atomicwrites"."${deps."lorri"."0.1.0"."atomicwrites"}" deps)
+        (cratesIO.crates."backtrace"."${deps."lorri"."0.1.0"."backtrace"}" deps)
         (cratesIO.crates."bincode"."${deps."lorri"."0.1.0"."bincode"}" deps)
         (cratesIO.crates."crossbeam_channel"."${deps."lorri"."0.1.0"."crossbeam_channel"}" deps)
         (cratesIO.crates."directories"."${deps."lorri"."0.1.0"."directories"}" deps)
@@ -32,11 +33,13 @@ rec {
         (cratesIO.crates."serde_json"."${deps."lorri"."0.1.0"."serde_json"}" deps)
         (cratesIO.crates."structopt"."${deps."lorri"."0.1.0"."structopt"}" deps)
         (cratesIO.crates."tempfile"."${deps."lorri"."0.1.0"."tempfile"}" deps)
+        (cratesIO.crates."uuid"."${deps."lorri"."0.1.0"."uuid"}" deps)
         (cratesIO.crates."vec1"."${deps."lorri"."0.1.0"."vec1"}" deps)
       ]);
     };
     features_.lorri."0.1.0" = deps: f: updateFeatures f (rec {
       atomicwrites."${deps.lorri."0.1.0".atomicwrites}".default = true;
+      backtrace."${deps.lorri."0.1.0".backtrace}".default = true;
       bincode."${deps.lorri."0.1.0".bincode}".default = true;
       crossbeam_channel."${deps.lorri."0.1.0".crossbeam_channel}".default = true;
       directories."${deps.lorri."0.1.0".directories}".default = true;
@@ -54,9 +57,14 @@ rec {
       serde_json."${deps.lorri."0.1.0".serde_json}".default = true;
       structopt."${deps.lorri."0.1.0".structopt}".default = true;
       tempfile."${deps.lorri."0.1.0".tempfile}".default = true;
+      uuid = fold recursiveUpdate {} [
+        { "${deps.lorri."0.1.0".uuid}"."v4" = true; }
+        { "${deps.lorri."0.1.0".uuid}".default = true; }
+      ];
       vec1."${deps.lorri."0.1.0".vec1}".default = true;
     }) [
       (cratesIO.features_.atomicwrites."${deps."lorri"."0.1.0"."atomicwrites"}" deps)
+      (cratesIO.features_.backtrace."${deps."lorri"."0.1.0"."backtrace"}" deps)
       (cratesIO.features_.bincode."${deps."lorri"."0.1.0"."bincode"}" deps)
       (cratesIO.features_.crossbeam_channel."${deps."lorri"."0.1.0"."crossbeam_channel"}" deps)
       (cratesIO.features_.directories."${deps."lorri"."0.1.0"."directories"}" deps)
@@ -73,6 +81,7 @@ rec {
       (cratesIO.features_.serde_json."${deps."lorri"."0.1.0"."serde_json"}" deps)
       (cratesIO.features_.structopt."${deps."lorri"."0.1.0"."structopt"}" deps)
       (cratesIO.features_.tempfile."${deps."lorri"."0.1.0"."tempfile"}" deps)
+      (cratesIO.features_.uuid."${deps."lorri"."0.1.0"."uuid"}" deps)
       (cratesIO.features_.vec1."${deps."lorri"."0.1.0"."vec1"}" deps)
     ];
 
@@ -101,6 +110,16 @@ rec {
     winapi = "0.3.6";
   };
   deps.autocfg."0.1.7" = {};
+  deps.backtrace."0.3.40" = {
+    backtrace_sys = "0.1.32";
+    cfg_if = "0.1.6";
+    libc = "0.2.55";
+    rustc_demangle = "0.1.16";
+  };
+  deps.backtrace_sys."0.1.32" = {
+    libc = "0.2.55";
+    cc = "1.0.37";
+  };
   deps.bincode."1.1.3" = {
     byteorder = "1.3.1";
     serde = "1.0.88";
@@ -112,6 +131,9 @@ rec {
   deps.bit_vec."0.5.0" = {};
   deps.bitflags."1.0.4" = {};
   deps.byteorder."1.3.1" = {};
+  deps.c2_chacha."0.2.3" = {
+    ppv_lite86 = "0.2.6";
+  };
   deps.cc."1.0.37" = {};
   deps.cfg_if."0.1.6" = {};
   deps.chashmap."2.2.2" = {
@@ -168,6 +190,12 @@ rec {
     fuchsia_zircon_sys = "0.3.3";
   };
   deps.fuchsia_zircon_sys."0.3.3" = {};
+  deps.getrandom."0.1.3" = {
+    fuchsia_cprng = "0.1.1";
+    cloudabi = "0.0.3";
+    libc = "0.2.55";
+    winapi = "0.3.6";
+  };
   deps.heck."0.3.1" = {
     unicode_segmentation = "1.2.1";
   };
@@ -201,6 +229,7 @@ rec {
   };
   deps.lorri."0.1.0" = {
     atomicwrites = "0.2.3";
+    backtrace = "0.3.40";
     bincode = "1.1.3";
     crossbeam_channel = "0.3.9";
     directories = "1.0.2";
@@ -217,6 +246,7 @@ rec {
     serde_json = "1.0.38";
     structopt = "0.2.14";
     tempfile = "3.0.7";
+    uuid = "0.8.1";
     vec1 = "1.1.0";
   };
   deps.maybe_uninit."2.0.0" = {};
@@ -288,6 +318,7 @@ rec {
     libc = "0.2.55";
     winapi = "0.3.6";
   };
+  deps.ppv_lite86."0.2.6" = {};
   deps.proc_macro2."0.4.27" = {
     unicode_xid = "0.1.0";
   };
@@ -329,16 +360,32 @@ rec {
     libc = "0.2.55";
     winapi = "0.3.6";
   };
+  deps.rand."0.7.2" = {
+    rand_core = "0.5.1";
+    rand_chacha = "0.2.1";
+    rand_hc = "0.2.0";
+    libc = "0.2.55";
+  };
   deps.rand_chacha."0.1.1" = {
     rand_core = "0.3.1";
     autocfg = "0.1.7";
+  };
+  deps.rand_chacha."0.2.1" = {
+    c2_chacha = "0.2.3";
+    rand_core = "0.5.1";
   };
   deps.rand_core."0.3.1" = {
     rand_core = "0.4.0";
   };
   deps.rand_core."0.4.0" = {};
+  deps.rand_core."0.5.1" = {
+    getrandom = "0.1.3";
+  };
   deps.rand_hc."0.1.0" = {
     rand_core = "0.3.1";
+  };
+  deps.rand_hc."0.2.0" = {
+    rand_core = "0.5.1";
   };
   deps.rand_isaac."0.1.1" = {
     rand_core = "0.3.1";
@@ -383,6 +430,7 @@ rec {
   deps.remove_dir_all."0.5.1" = {
     winapi = "0.3.6";
   };
+  deps.rustc_demangle."0.1.16" = {};
   deps.rustc_version."0.2.3" = {
     semver = "0.9.0";
   };
@@ -464,6 +512,9 @@ rec {
   deps.unicode_width."0.1.5" = {};
   deps.unicode_xid."0.1.0" = {};
   deps.utf8_ranges."1.0.2" = {};
+  deps.uuid."0.8.1" = {
+    rand = "0.7.2";
+  };
   deps.vec1."1.1.0" = {};
   deps.vec_map."0.8.1" = {};
   deps.void."1.0.2" = {};

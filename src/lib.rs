@@ -3,6 +3,10 @@
 //! configuration and patterns in to a declarative configuration.
 
 #![warn(missing_docs)]
+// Required to extract the panic message in our self-made panic hook (see panic.rs). This is
+// unstable for the moment - check here (on `master`) to see if the feature has been stabilized:
+// https://github.com/rust-lang/rust/blob/0f12bad718bb8b1fb2b1b7267a02fffaef6e1e3c/src/libcore/panic.rs#L93
+#![feature(panic_info_message)]
 
 #[macro_use]
 extern crate structopt;
@@ -40,6 +44,7 @@ pub mod mpsc;
 pub mod nix;
 pub mod ops;
 pub mod osstrlines;
+pub mod panic;
 pub mod pathreduction;
 pub mod project;
 pub mod socket;

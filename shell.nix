@@ -28,11 +28,12 @@ let
       # This rust comes from the Mozilla rust overlay so we can
       # get Clippy. Not suitable for production builds. See
       # ./nix/nixpkgs.nix for more details.
-      rustChannels.stable.rust
+      rustChannels.nightly.rust
       pkgs.bashInteractive
       pkgs.git
       pkgs.direnv
       pkgs.shellcheck
+      pkgs.rustfmt
       pkgs.carnix
       pkgs.nix-prefetch-git
 
