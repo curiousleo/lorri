@@ -71,7 +71,7 @@ fn instrumented_instantiation(
 
     let mut cmd = Command::new("/home/leo/Code/nix/inst/bin/nix-instantiate");
 
-    // let logged_evaluation_nix = cas.file_from_string(include_str!("./logged-evaluation.nix"))?;
+    let logged_evaluation_nix = cas.file_from_string(include_str!("./logged-evaluation.nix"))?;
 
     // TODO: see ::nix::CallOpts::paths for the problem with this
     let gc_root_dir = tempfile::TempDir::new()?;
@@ -548,6 +548,7 @@ in {}
     /// and often exhausts the amount of available file handles
     /// (especially on macOS).
     #[test]
+    #[ignore]
     fn no_unnecessary_files_or_directories_watched() -> std::io::Result<()> {
         let root_tmp = tempfile::tempdir()?;
         let cas_tmp = tempfile::tempdir()?;
