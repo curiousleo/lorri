@@ -652,6 +652,10 @@ mod tests {
                 .any(|m| m.contains("hello-unstable-1.0.0.drv")),
             "looking for a line like '  /nix/store/...-hello-unstable-1.0.0.drv'"
         );
+        assert!(
+            messages.iter().any(|m| m.contains("building '/nix/store")),
+            "looking for a line like 'building \'/nix/store...'"
+        );
     }
 
 }
