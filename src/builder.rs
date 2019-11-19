@@ -69,16 +69,16 @@ fn instrumented_instantiation(
     // to determine which files we should setup watches on.
     // Increasing verbosity by two levels via `-vv` satisfies that.
 
-    let mut cmd = Command::new("nix-instantiate");
+    let mut cmd = Command::new("/home/leo/Code/nix/inst/bin/nix-instantiate");
 
-    let logged_evaluation_nix = cas.file_from_string(include_str!("./logged-evaluation.nix"))?;
+    // let logged_evaluation_nix = cas.file_from_string(include_str!("./logged-evaluation.nix"))?;
 
     // TODO: see ::nix::CallOpts::paths for the problem with this
     let gc_root_dir = tempfile::TempDir::new()?;
 
     cmd.args(&[
-        // verbose mode prints the files we track
-        OsStr::new("-vv"),
+        // emit access trace messages
+        OsStr::new("--option"), OsStr::new("trace-access"), OsStr::new("true"),
         // we add a temporary indirect GC root
         OsStr::new("--add-root"),
         gc_root_dir.path().join("result").as_os_str(),
@@ -88,18 +88,19 @@ fn instrumented_instantiation(
         OsStr::new("runTimeClosure"),
         OsStr::new(crate::RUN_TIME_CLOSURE),
         // the source file
-        OsStr::new("--argstr"),
-        OsStr::new("src"),
+        // OsStr::new("--argstr"),
+        // OsStr::new("src"),
+        OsStr::new("--"),
         root_nix_file.as_os_str(),
         // instrumented by `./logged-evaluation.nix`
-        OsStr::new("--"),
-        &logged_evaluation_nix.as_os_str(),
+        // OsStr::new("--"),
+        // &logged_evaluation_nix.as_os_str(),
     ])
     .stdin(Stdio::null())
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());
 
-    debug!("$ {:?}", cmd);
+    println!("$ {:?}", cmd);
 
     let mut child = cmd.spawn().map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => NixNotFoundError::NixNotFound,
@@ -322,15 +323,15 @@ where
     lazy_static! {
         // These are the .nix files that are opened for evaluation.
         static ref EVAL_FILE: Regex =
-            Regex::new("^evaluating file '(?P<source>.*)'$").expect("invalid regex!");
+            Regex::new("^trace-file-access: type=evalFile path=(?P<source>.*)$").expect("invalid regex!");
         // When you reference a source file, nix copies it to the store and prints this.
         // This the same is true for directories (e.g. `foo = ./abc` in a derivation).
         static ref COPIED_SOURCE: Regex =
-            Regex::new("^copied source '(?P<source>.*)' -> '(?:.*)'$").expect("invalid regex!");
+            Regex::new("^trace-file-access: type=copyPathToStore path=(?P<source>.*)$").expect("invalid regex!");
         // These are printed for `builtins.readFile` and `builtins.readDir`,
         // by our instrumentation in `./logged-evaluation.nix`.
         static ref LORRI_READ: Regex =
-            Regex::new("^trace: lorri read: '(?P<source>.*)'$").expect("invalid regex!");
+            Regex::new("^trace-file-access: type=(addPath|readFile|readDir) path=(?P<source>.*)$").expect("invalid regex!");
     }
 
     // see the regexes above for explanations of the nix outputs
@@ -342,14 +343,18 @@ where
             // Lines about evaluating a file are much more common, so looking
             // for them first will reduce comparisons.
             if let Some(matches) = EVAL_FILE.captures(&linestr) {
+                println!("eval match: {}", &matches["source"]);
                 LogDatum::NixSourceFile(PathBuf::from(&matches["source"]))
             } else if let Some(matches) = COPIED_SOURCE.captures(&linestr) {
+                println!("copy match: {}", &matches["source"]);
                 LogDatum::CopiedSource(PathBuf::from(&matches["source"]))
             // TODO: parse files and dirs into different LogInfo cases
             // to make sure we only watch directories if they were builtins.readDir’ed
             } else if let Some(matches) = LORRI_READ.captures(&linestr) {
+                println!("read match: {}", &matches["source"]);
                 LogDatum::ReadFileOrDir(PathBuf::from(&matches["source"]))
             } else {
+                println!("text match: {}", linestr);
                 LogDatum::Text(linestr.to_owned())
             }
         }
@@ -408,18 +413,18 @@ mod tests {
     #[test]
     fn evaluation_line_to_log_datum() {
         assert_eq!(
-            parse_evaluation_line("evaluating file '/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/lib/systems/for-meta.nix'"),
+            parse_evaluation_line("trace-file-access: type=evalFile path=/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/lib/systems/for-meta.nix"),
             LogDatum::NixSourceFile(PathBuf::from("/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/lib/systems/for-meta.nix"))
         );
 
         assert_eq!(
-            parse_evaluation_line("copied source '/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/pkgs/stdenv/generic/default-builder.sh' -> '/nix/store/9krlzvny65gdc8s7kpb6lkx8cd02c25b-default-builder.sh'"),
+            parse_evaluation_line("trace-file-access: type=copyPathToStore path=/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/pkgs/stdenv/generic/default-builder.sh"),
             LogDatum::CopiedSource(PathBuf::from("/nix/store/zqxha3ax0w771jf25qdblakka83660gr-source/pkgs/stdenv/generic/default-builder.sh"))
         );
 
         assert_eq!(
             parse_evaluation_line(
-                "trace: lorri read: '/home/grahamc/projects/grahamc/lorri/nix/nixpkgs.json'"
+                "trace-file-access: type=readFile path=/home/grahamc/projects/grahamc/lorri/nix/nixpkgs.json"
             ),
             LogDatum::ReadFileOrDir(PathBuf::from(
                 "/home/grahamc/projects/grahamc/lorri/nix/nixpkgs.json"
@@ -458,6 +463,7 @@ derivation {{
     /// Some nix builds can output non-UTF-8 encoded text
     /// (arbitrary binary output). We should not crash in that case.
     #[test]
+    #[ignore]
     fn non_utf8_nix_output() -> std::io::Result<()> {
         let tmp = tempfile::tempdir()?;
         let cas = ContentAddressable::new(tmp.path().to_owned())?;
@@ -587,7 +593,8 @@ dir-as-source = ./dir;
         let ends_with = |end| inst_info.referenced_paths.iter().any(|p| p.ends_with(end));
         assert!(
             ends_with("foo/default.nix"),
-            "foo/default.nix should be watched!"
+            "foo/default.nix should be watched!: {:#?}",
+            inst_info.referenced_paths
         );
         assert!(!ends_with("foo/bar"), "foo/bar should not be watched!");
         assert!(ends_with("foo/baz"), "foo/baz should be watched!");
