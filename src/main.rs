@@ -104,7 +104,7 @@ mod tests {
     /// Try instantiating the trivial shell file we provide the user.
     #[test]
     fn trivial_shell_nix() -> std::io::Result<()> {
-        let out = std::process::Command::new("nix-instantiate")
+        let out = std::process::Command::new("/home/leo/Code/nix/inst/bin/nix-instantiate")
             // we can’t assume to have a <nixpkgs>, so use bogus-nixpkgs
             .args(&["-I", "nixpkgs=./nix/bogus-nixpkgs/"])
             .args(&["--expr", TRIVIAL_SHELL_SRC])

@@ -78,7 +78,7 @@ fn instrumented_instantiation(
 
     cmd.args(&[
         // emit access trace messages
-        OsStr::new("--option"), OsStr::new("trace-access"), OsStr::new("true"),
+        // OsStr::new("--option"), OsStr::new("trace-access"), OsStr::new("true"),
         // we add a temporary indirect GC root
         OsStr::new("--add-root"),
         gc_root_dir.path().join("result").as_os_str(),
@@ -88,13 +88,12 @@ fn instrumented_instantiation(
         OsStr::new("runTimeClosure"),
         OsStr::new(crate::RUN_TIME_CLOSURE),
         // the source file
-        // OsStr::new("--argstr"),
-        // OsStr::new("src"),
-        OsStr::new("--"),
+        OsStr::new("--argstr"),
+        OsStr::new("src"),
         root_nix_file.as_os_str(),
         // instrumented by `./logged-evaluation.nix`
-        // OsStr::new("--"),
-        // &logged_evaluation_nix.as_os_str(),
+        OsStr::new("--"),
+        &logged_evaluation_nix.as_os_str(),
     ])
     .stdin(Stdio::null())
     .stdout(Stdio::piped())

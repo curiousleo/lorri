@@ -2,24 +2,6 @@
 let
   runtimeCfg = import runTimeClosure;
 
-  # using scopedImport, replace readDir and readFile with
-  # implementations which will log files and paths they see.
-  overrides = {
-    import = scopedImport overrides;
-    scopedImport = x: builtins.scopedImport (overrides // x);
-    builtins = builtins // {
-      readFile = file: builtins.trace "lorri read: '${toString file}'" (builtins.readFile file);
-      readDir = path: builtins.trace "lorri read: '${toString path}'" (builtins.readDir path);
-    };
-  };
-
-  imported =
-    let
-      raw = overrides.scopedImport overrides src;
-    in if (builtins.isFunction raw)
-    then raw {}
-    else raw;
-
   # If you add a .drv to a gc-root, the `.drv` itself is protected
   # from GC, and the parent `drv`s up the tree are also protected.
   # However, the output paths referenced in any of the drvs are NOT
@@ -137,6 +119,6 @@ let
     allowSubstitutes = false;
   });
 
-  gc-root = keep-env-hack imported;
+  gc-root = keep-env-hack src;
 
 in gc-root
