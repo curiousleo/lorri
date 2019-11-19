@@ -7,7 +7,8 @@ let
   overrides = {
     import = scopedImport overrides;
     scopedImport = x: builtins.scopedImport (overrides // x);
-    builtins = builtins;
+    builtins = builtins // {
+    };
   };
 
   imported =

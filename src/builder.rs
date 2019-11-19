@@ -77,8 +77,8 @@ fn instrumented_instantiation(
     let gc_root_dir = tempfile::TempDir::new()?;
 
     cmd.args(&[
-        // emit access trace messages
-        // OsStr::new("--option"), OsStr::new("trace-access"), OsStr::new("true"),
+        // verbose mode prints the files we track
+        //OsStr::new("-vv"),
         // we add a temporary indirect GC root
         OsStr::new("--add-root"),
         gc_root_dir.path().join("result").as_os_str(),
@@ -548,7 +548,6 @@ in {}
     /// and often exhausts the amount of available file handles
     /// (especially on macOS).
     #[test]
-    #[ignore]
     fn no_unnecessary_files_or_directories_watched() -> std::io::Result<()> {
         let root_tmp = tempfile::tempdir()?;
         let cas_tmp = tempfile::tempdir()?;
