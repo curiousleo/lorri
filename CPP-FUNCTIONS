@@ -1,0 +1,6 @@
+store-api.hh: openStore, addPermRoot
+value.hh: EvalState, Value
+eval.hh: parseExprFromString, parseExprFromFile, resolveExprPath, checkSourcePath
+? common-eval-args.hh lookupFileArg, eval, forceValue, forceValueDeep, autoCallFunction
+attr-path.hh findAlongAttrPath
+get-drvs.hh getDerivations, queryDrvPath, queryOutputName
