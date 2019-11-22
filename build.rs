@@ -41,4 +41,58 @@ pub const RUN_TIME_CLOSURE: &str = "{}";
         .as_bytes(),
     )
     .unwrap();
+
+   // SORTA WORKS
+   // println!("cargo:rustc-link-lib=nix-instantiate");
+   // println!("cargo:rustc-link-search=lib");
+    
+    cpp_build::Config::new()
+        //.include("/nix/store/j91y1ggqgpy3rk5frrc7xjz1nzficd2s-nix-2.3-dev/include/nix")
+        .include("/home/leo/Code/nix")
+        .include("/home/leo/Code/nix/src")
+        .include("/home/leo/Code/nix/src/libutil")
+        .include("/home/leo/Code/nix/src/libstore")
+        .include("/home/leo/Code/nix/src/libmain")
+        .include("/home/leo/Code/nix/src/libexpr")
+        .include("/home/leo/Code/nix/src/nix")
+        .include("deps/boost_1_69_0")
+        .define("SYSTEM", Some("\"x86_64-linux\""))
+        .flag("-std=c++17")
+        .flag("-Wno-unused-parameter")
+        .build("src/main.rs");
+    println!("cargo:rustc-link-search={}", "/nix/store/dj2ylmvx2c288h51yx8ljg4h6bh5vyla-nix-2.3/lib");
+    // println!("cargo:rustc-link-lib=nix-instantiate");
+
+    // println!("cargo:libdir=lib");
+
+    /*
+    cc::Build::new()
+        .cpp(true)
+        .flag("-std=c++17")
+        .file("nix-instantiate.o")
+
+        .include("/home/leo/Code/nix")
+        .include("/home/leo/Code/nix/src")
+        .include("/home/leo/Code/nix/src/libutil")
+        .include("/home/leo/Code/nix/src/libstore")
+        .include("/home/leo/Code/nix/src/libmain")
+        .include("/home/leo/Code/nix/src/libexpr")
+        .include("/home/leo/Code/nix/src/nix")
+
+        .include("/nix/store/9jahz6hcjglil64gnjawf8zqg3q4x667-boehm-gc-8.0.4-dev/include")
+        .include("/nix/store/qqk0ijh32al97mkzplxsm5mgvwibmdwq-libseccomp-2.4.1-dev/include")
+        .include("/nix/store/cnvnsnqwsxqna91cr1gfhz7syqgqngyx-brotli-1.0.7-dev/include")
+        .include("/nix/store/2xix00ck5pma762k84qsi2331yjwycdf-xz-5.2.4-dev/include")
+        .include("/nix/store/z3ysw73l9ck4qrbcd4slsr38bagnhjia-libsodium-1.0.18-dev/include")
+        .include("/nix/store/959npfrjs4nps0yhabfsf3bg328y0pj3-editline-1.16.1-dev/include")
+        .include("/nix/store/8gkxx0z157j9pyl4c63qgci88qp0myrm-curl-7.65.3-dev/include")
+        .include("/nix/store/hvf37pljgr1jivi3hzxvcizvd30kcf38-sqlite-3.28.0-dev/include")
+        .include("/nix/store/f4qvdagn6g7wdmr65wc0s3a2jdfmr7r7-openssl-1.1.1d-dev/include")
+
+        .include("deps/boost_1_69_0")
+
+        .compile("nix");
+        */
+
+    
 }

@@ -76,6 +76,9 @@ fn instrumented_instantiation(
     // TODO: see ::nix::CallOpts::paths for the problem with this
     let gc_root_dir = tempfile::TempDir::new()?;
 
+
+    // Args: GC root dir, runtime closure, root nix file, logged evaluation file
+
     cmd.args(&[
         // verbose mode prints the files we track
         OsStr::new("-vv"),

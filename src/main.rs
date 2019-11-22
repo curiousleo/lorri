@@ -16,10 +16,115 @@ use lorri::project::Project;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+use cpp::cpp;
+
 const TRIVIAL_SHELL_SRC: &str = include_str!("./trivial-shell.nix");
 const DEFAULT_ENVRC: &str = "eval \"$(lorri direnv)\"";
 
+cpp!{{
+    #include "globals.hh"
+    #include "shared.hh"
+    #include "eval.hh"
+    #include "eval-inline.hh"
+    #include "get-drvs.hh"
+    #include "attr-path.hh"
+    #include "value-to-xml.hh"
+    #include "value-to-json.hh"
+    #include "util.hh"
+    #include "store-api.hh"
+    #include "common-eval-args.hh"
+    #include "legacy.hh"
+
+    #include <map>
+    #include <iostream>
+}}
+
+fn _main(argc: i32, argv: *mut *mut u8) {
+    let res = unsafe {
+        cpp!([argc as "int", argv as "char * *"] -> i32 as "int" {
+
+            using namespace nix;
+
+            Strings files;
+
+            struct MyArgs : LegacyArgs, MixEvalArgs
+            {
+                using LegacyArgs::LegacyArgs;
+            };
+
+            auto gcRoot;
+            bool indirectRoot;
+
+            MyArgs myArgs(baseNameOf(argv[0]), [&](Strings::iterator & arg, const Strings::iterator & end) {
+                if (*arg == "--add-root")
+                    gcRoot = getArg(*arg, arg, end);
+                else if (*arg == "--indirect")
+                    indirectRoot = true;
+                else if (*arg != "" && arg->at(0) == '-')
+                    return false;
+                else
+                    files.push_back(*arg);
+                return true;
+            });
+
+            myArgs.parseCmdline(argvToStrings(argc, argv));
+
+            // initPlugins();
+
+            auto store = openStore();
+
+            auto state = std::make_unique<EvalState>(myArgs.searchPath, store);
+            state->repair = NoRepair;
+
+            Bindings & autoArgs = *myArgs.getAutoArgs(*state);
+
+            for (auto & i : files) {
+                Expr * e = 
+                    state->parseExprFromFile(resolveExprPath(state->checkSourcePath(lookupFileArg(*state, i))));
+    //            processExpr(*state, /* attrPaths */ {""}, /* parseOnly */ false, /* strict */ false, autoArgs,
+    //                /* evalOnly */ false, /* outputKind */ okPlain, /* xmlOutputSourceLocation */ true, e);
+    //            processExpr(*state, autoArgs, e);
+
+
+
+    Path rootName = absPath(gcRoot);
+    auto store2 = state.store.dynamic_pointer_cast<LocalFSStore>();
+
+    Value vRoot;
+    state.eval(e, vRoot);
+    state.forceValue(vRoot);
+
+    DrvInfos drvs;
+    getDerivations(state, vRoot, "", autoArgs, drvs, false);
+    for (auto & i : drvs) {
+        Path drvPath = i.queryDrvPath();
+
+        /* What output do we want? */
+        string outputName = i.queryOutputName();
+        if (outputName == "")
+            throw Error(format("derivation '%1%' lacks an 'outputName' attribute ") % drvPath);
+
+        drvPath = store2->addPermRoot(drvPath, rootName, /* indirectRoot */ true);
+        std::cout << format("%1%%2%\n") % drvPath % (outputName != "out" ? "!" + outputName : "");
+    }
+
+
+
+            }
+
+            state->printStats();
+
+            return 0;
+        })
+    };
+}
+
 fn main() {
+    let mut hi = String::from("hi");
+    _main(1, [hi.as_mut_ptr()].as_mut_ptr());
+}
+
+fn main_old() {
     // This returns 101 on panics, see also `ExitError::panic`.
     setup_panic!();
 
