@@ -5,6 +5,7 @@ pub mod direnv;
 pub mod info;
 pub mod init;
 pub mod ping;
+pub mod services;
 pub mod upgrade;
 pub mod watch;
 
@@ -127,6 +128,12 @@ pub mod error {
         /// Exit message to be displayed to the user on stderr
         pub fn message(&self) -> &str {
             &self.message
+        }
+    }
+
+    impl std::convert::From<std::io::Error> for ExitError {
+        fn from(e: std::io::Error) -> Self {
+            ExitError::panic(format!("{:?}", e))
         }
     }
 }

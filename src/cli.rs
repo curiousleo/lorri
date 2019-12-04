@@ -33,6 +33,10 @@ pub enum Command {
     #[structopt(name = "watch")]
     Watch(WatchOptions),
 
+    /// Run services
+    #[structopt(name = "services")]
+    Services,
+
     /// Start the multi-project daemon. Replaces `lorri watch`
     #[structopt(name = "daemon")]
     Daemon,

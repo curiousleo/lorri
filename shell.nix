@@ -14,7 +14,7 @@ let
     pkgs.lib.mapAttrs
       (_: v: pkgs.rustChannelOf v)
       (import ./nix/rust-channels.nix {
-        stableVersion = "1.35.0";
+        stableVersion = "1.39.0";
       });
 
   # Keep project-specific shell commands local
