@@ -37,26 +37,6 @@ pub fn main() -> OpResult {
     ok()
 }
 
-async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
-    let mut id: u64 = 0;
-    let duration = std::time::Duration::from_millis(1000);
-    loop {
-        tokio::time::delay_for(duration).await;
-        let name = format!("echo {}", id);
-        id += 1;
-        service_tx
-            .send(Service {
-                name,
-                path: &Path::new(
-                    "/nix/store/fa4zygrvfq77gccqiyl9kixs05nfihk1-bash-interactive-4.4-p23/bin/bash",
-                ),
-                args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye >&2"],
-            })
-            .await
-            .unwrap();
-    }
-}
-
 async fn main_async() {
     let (service_tx, service_rx) = channel(1000);
 
@@ -102,5 +82,26 @@ async fn start_services<'a>(mut service_rx: Receiver<Service<'a>>) {
             service.name.to_string(),
             Fd::Stderr,
         ));
+    }
+}
+
+// TESTING ONLY
+async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
+    let mut id: u64 = 0;
+    let duration = std::time::Duration::from_millis(1000);
+    loop {
+        tokio::time::delay_for(duration).await;
+        let name = format!("echo {}", id);
+        id += 1;
+        service_tx
+            .send(Service {
+                name,
+                path: &Path::new(
+                    "/nix/store/fa4zygrvfq77gccqiyl9kixs05nfihk1-bash-interactive-4.4-p23/bin/bash",
+                ),
+                args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye >&2"],
+            })
+            .await
+            .unwrap();
     }
 }
