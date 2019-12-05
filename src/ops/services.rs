@@ -1,9 +1,10 @@
 //! Control development services.
 
-use crate::ops::error::{ok, OpResult};
+use crate::ops::error::{ok, ExitError, OpResult};
 use futures::prelude::*;
 use slog_scope::{info, warn};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::fs::File;
 use std::process::Stdio;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -24,30 +25,30 @@ struct Log {
     message: String,
 }
 
-#[derive(Debug)]
-struct Service<'a> {
+#[derive(Debug, Deserialize)]
+struct Service {
     name: String,
-    path: &'a Path,
-    args: &'a [&'a str],
+    path: PathBuf,
+    args: Vec<String>,
 }
 
 /// See the documentation for lorri::cli::Command::Services.
-pub fn main() -> OpResult {
-    Runtime::new()?.block_on(main_async());
+pub fn main(config: &Path) -> OpResult {
+    let services: Vec<Service> = match serde_json::from_reader(std::io::BufReader::new(File::open(config)?)) {
+        Ok(services) => services,
+        Err(e) => Err(ExitError::temporary(format!("{}", e)))?,
+    };
+    Runtime::new()?.block_on(main_async(services));
     ok()
 }
 
-async fn main_async() {
-    let (service_tx, service_rx) = channel(1000);
+async fn main_async(services: Vec<Service>) {
+    let (mut service_tx, service_rx) = channel(1000);
+    for service in services {
+        service_tx.send(service).await.unwrap();
+    }
 
-    let (r1, r2) = futures::future::join(
-        tokio::spawn(spawner(service_tx)),
-        tokio::spawn(start_services(service_rx)),
-    )
-    .await;
-
-    r1.unwrap();
-    r2.unwrap();
+    tokio::spawn(start_services(service_rx)).await.unwrap()
 }
 
 async fn to_log<'a, L: Stream<Item = tokio::io::Result<String>> + std::marker::Unpin>(
@@ -63,7 +64,7 @@ async fn to_log<'a, L: Stream<Item = tokio::io::Result<String>> + std::marker::U
     }
 }
 
-async fn start_services<'a>(mut service_rx: Receiver<Service<'a>>) {
+async fn start_services(mut service_rx: Receiver<Service>) {
     while let Some(service) = service_rx.recv().await {
         let mut child = Command::new(&service.path)
             .args(service.args)
@@ -86,7 +87,7 @@ async fn start_services<'a>(mut service_rx: Receiver<Service<'a>>) {
 }
 
 // TESTING ONLY
-async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
+async fn spawner(mut service_tx: Sender<Service>) {
     let mut id: u64 = 0;
     let duration = std::time::Duration::from_millis(1000);
     loop {
@@ -96,10 +97,10 @@ async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
         service_tx
             .send(Service {
                 name,
-                path: &Path::new(
+                path: PathBuf::from(
                     "/nix/store/fa4zygrvfq77gccqiyl9kixs05nfihk1-bash-interactive-4.4-p23/bin/bash",
                 ),
-                args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye >&2"],
+                args: vec!["-c".to_string(), "echo start; sleep 2; echo hi; sleep 2; echo bye >&2".to_string()],
             })
             .await
             .unwrap();

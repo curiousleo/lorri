@@ -107,9 +107,9 @@ fn run_command(log: slog::Logger, opts: Arguments) -> OpResult {
             let _guard = without_project();
             upgrade::main(opts, paths.cas_store())
         }
-        Command::Services => {
+        Command::Services(opts) => {
             let _guard = without_project();
-            services::main()
+            services::main(&opts.config_file)
         }
         // TODO: remove
         Command::Ping_(opts) => {

@@ -35,7 +35,7 @@ pub enum Command {
 
     /// Run services
     #[structopt(name = "services")]
-    Services,
+    Services(ServicesOptions),
 
     /// Start the multi-project daemon. Replaces `lorri watch`
     #[structopt(name = "daemon")]
@@ -79,6 +79,14 @@ pub struct WatchOptions {
     /// Exit after a the first build
     #[structopt(long = "once")]
     pub once: bool,
+}
+
+/// Options for `services` subcommand.
+#[derive(StructOpt, Debug)]
+pub struct ServicesOptions {
+    /// The .nix file in the current directory to use
+    #[structopt(long = "config", parse(from_os_str))]
+    pub config_file: PathBuf,
 }
 
 /// Send a message with a lorri project.
