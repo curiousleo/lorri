@@ -30,7 +30,6 @@ slog-term = "2.4.2"
 structopt = "0.2"
 tempfile = "3.0.7"
 tokio = { version = "0.2", features = ["full"] }
-#tokio-io = "0.1"
 vec1 = "1.1.0"
 # pinned to a git commit pending v2.0 release
 # see: https://github.com/rust-cli/human-panic/issues/46

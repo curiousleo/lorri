@@ -1,3 +1,5 @@
+//! Control development services.
+
 use crate::ops::error::{ok, OpResult};
 use futures::prelude::*;
 use slog_scope::{info, warn};
@@ -29,6 +31,7 @@ struct Service<'a> {
     args: &'a [&'a str],
 }
 
+/// See the documentation for lorri::cli::Command::Services.
 pub fn main() -> OpResult {
     Runtime::new()?.block_on(main_async());
     ok()
@@ -55,25 +58,16 @@ async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
 }
 
 async fn main_async() {
-    let (mut service_tx, service_rx) = channel(1000);
+    let (service_tx, service_rx) = channel(1000);
 
-    // HACK
-    service_tx
-        .send(Service {
-            name: "echo 0000".to_string(),
-            path: &Path::new(
-                "/nix/store/fa4zygrvfq77gccqiyl9kixs05nfihk1-bash-interactive-4.4-p23/bin/bash",
-            ),
-            args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye"],
-        })
-        .await
-        .unwrap();
-    // HACK
+    let (r1, r2) = futures::future::join(
+        tokio::spawn(spawner(service_tx)),
+        tokio::spawn(start_services(service_rx)),
+    )
+    .await;
 
-    let spwn_handle = tokio::spawn(spawner(service_tx));
-    let svc_handle = tokio::spawn(start_services(service_rx));
-
-    futures::future::join(spwn_handle, svc_handle).await;
+    r1.unwrap();
+    r2.unwrap();
 }
 
 async fn to_log<'a, L: Stream<Item = tokio::io::Result<String>> + std::marker::Unpin>(
