@@ -50,7 +50,7 @@ async fn spawner<'a>(mut service_tx: Sender<Service<'a>>) {
                 path: &Path::new(
                     "/nix/store/fa4zygrvfq77gccqiyl9kixs05nfihk1-bash-interactive-4.4-p23/bin/bash",
                 ),
-                args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye"],
+                args: &["-c", "echo start; sleep 2; echo hi; sleep 2; echo bye >&2"],
             })
             .await
             .unwrap();
