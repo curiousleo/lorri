@@ -26,15 +26,20 @@ struct Log {
 }
 
 #[derive(Debug, Deserialize)]
+struct Services {
+    services: Vec<Service>,
+}
+
+#[derive(Debug, Deserialize)]
 struct Service {
     name: String,
-    path: PathBuf,
+    program: PathBuf,
     args: Vec<String>,
 }
 
 /// See the documentation for lorri::cli::Command::Services.
 pub fn main(config: &Path) -> OpResult {
-    let services: Vec<Service> =
+    let services: Services =
         match serde_json::from_reader(std::io::BufReader::new(File::open(config)?)) {
             Ok(services) => services,
             Err(e) => Err(ExitError::temporary(format!("{}", e)))?,
@@ -43,9 +48,9 @@ pub fn main(config: &Path) -> OpResult {
     ok()
 }
 
-async fn main_async(services: Vec<Service>) {
+async fn main_async(services: Services) {
     let (mut service_tx, service_rx) = channel(1000);
-    for service in services {
+    for service in services.services {
         service_tx.send(service).await.unwrap();
     }
 
@@ -66,7 +71,8 @@ where
 
 async fn start_services(mut service_rx: Receiver<Service>) {
     while let Some(service) = service_rx.recv().await {
-        let mut child = Command::new(&service.path)
+        info!("starting"; "name" => &service.name);
+        let mut child = Command::new(&service.program)
             .args(service.args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
