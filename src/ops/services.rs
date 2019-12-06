@@ -2,14 +2,13 @@
 
 use crate::ops::error::{ok, ExitError, OpResult};
 use futures::prelude::*;
-use slog_scope::{info, warn};
-use slog::o;
+use slog_scope::{error, info, warn};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
-use tokio::process::{Command, Child};
+use tokio::process::{Child, Command};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Receiver};
 
@@ -96,17 +95,12 @@ async fn start_services(mut service_rx: Receiver<Service>) {
 
 async fn cleanup(child: Child, name: String) {
     let status = child.await.expect("failed to determine exit status");
-    slog_scope::with_logger(|log| {
-        // Construct a temporary Logger with the right fields
-        let log = match status.code() {
-            None => log.new(o!("name" => name)),
-            Some(status) => log.new(o!("name" => name, "status" => status)),
-        };
-        if status.success() {
-            slog::warn!(log, "service exited");
-        } else {
-            slog::error!(log, "service exited with non-zero exit code");
-        }
-    });
+    let code = status
+        .code()
+        .map_or("<unknown>".to_string(), |c| format!("{}", c));
+    if status.success() {
+        warn!("service exited"; "name" => name, "code" => code);
+    } else {
+        error!("service exited"; "name" => name, "code" => code);
+    }
 }
-
