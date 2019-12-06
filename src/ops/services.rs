@@ -57,18 +57,6 @@ async fn main_async(services: Services) {
     tokio::spawn(start_services(service_rx)).await.unwrap()
 }
 
-async fn log_stream<'a, L>(mut lines: L, name: String, fd: Fd)
-where
-    L: Stream<Item = tokio::io::Result<String>> + std::marker::Unpin,
-{
-    while let Some(Ok(message)) = lines.next().await {
-        match fd {
-            Fd::Stdout => info!("{}", message; "name" => &name),
-            Fd::Stderr => warn!("{}", message; "name" => &name),
-        }
-    }
-}
-
 async fn start_services(mut service_rx: Receiver<Service>) {
     while let Some(service) = service_rx.recv().await {
         info!("starting"; "name" => &service.name);
@@ -90,6 +78,18 @@ async fn start_services(mut service_rx: Receiver<Service>) {
             Fd::Stderr,
         ));
         tokio::spawn(cleanup(child, service.name));
+    }
+}
+
+async fn log_stream<'a, L>(mut lines: L, name: String, fd: Fd)
+where
+    L: Stream<Item = tokio::io::Result<String>> + std::marker::Unpin,
+{
+    while let Some(Ok(message)) = lines.next().await {
+        match fd {
+            Fd::Stdout => info!("{}", message; "name" => &name),
+            Fd::Stderr => warn!("{}", message; "name" => &name),
+        }
     }
 }
 
