@@ -14,6 +14,9 @@ pub struct Project {
     /// Absolute path to this project’s shell nix file.
     pub shell_nix: NixFile,
 
+    /// Absolute path to this project’s services nix file.
+    pub services_nix: Option<NixFile>,
+
     /// Directory in which this project’s
     /// garbage collection roots are stored.
     gc_root_path: PathBuf,
@@ -41,6 +44,7 @@ impl Project {
 
         Ok(Project {
             shell_nix,
+            services_nix: None, // TODO: take this as an argument to Project::new
             gc_root_path: project_gc_root,
             hash,
             cas,
