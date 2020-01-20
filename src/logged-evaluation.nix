@@ -10,6 +10,26 @@ assert shellSrc != null || servicesSrc != null;
 let
   runtimeCfg = import runtimeClosure;
 
+  # We want to support services.nix files which refer to derivation outputs,
+  # e.g. programs from <nixpkgs>. The natural choice, builtins.toFile, cannot
+  # refer to derivation outputs. We don't want lorri itself to have a runtime
+  # dependency on <nixpkgs>, so we can't use <nixpkgs>.lib.writeTextFile. Hence
+  # this minimal implementation.
+  writeTextFile = name: content: derivation {
+    inherit name content;
+    passAsFile = [ "content" ];
+    system = builtins.currentSystem;
+    outputs = [ "out" ];
+    PATH = runtimeCfg.path;
+    builder = "/bin/sh";
+    args = [
+      "-c"
+      ''
+        cp $contentPath $out
+      ''
+    ];
+  };
+
   # using scopedImport, replace readDir and readFile with
   # implementations which will log files and paths they see.
   logged = src:
@@ -40,29 +60,29 @@ let
   # references to all the store paths needed, preventing the shell's
   # actual environment from being deleted.
   wrapped-project = shell: services: derivation (
-    (shell.drvAttrs or {}) // {
-      name = "lorri-wrapped-project-${shell.name or "unknown"}";
+    shell.drvAttrs // {
+      name = "lorri-wrapped-project-${shell.name}";
 
-      origExtraClosure = shell.extraClosure or [];
+      origExtraClosure = shell.extraClosure;
       extraClosure = runtimeCfg.closure;
 
-      origBuilder = shell.builder or null;
+      origBuilder = shell.builder;
       builder = runtimeCfg.builder;
 
-      origSystem = shell.system or null;
+      origSystem = shell.system;
       system = builtins.currentSystem;
 
-      origPATH = shell.PATH or "";
+      origPATH = shell.PATH;
       PATH = runtimeCfg.path;
 
       # The derivation we're examining may be multi-output. However,
       # this builder only produces the «out» output. Not specifying a
       # single output means we would fail to start a shell for those
       # projects.
-      origOutputs = shell.outputs or [];
+      origOutputs = shell.outputs;
       outputs = [ "out" ];
 
-      origPreHook = shell.preHook or "";
+      origPreHook = shell.preHook;
       preHook = ''
         # Redefine addToSearchPathWithCustomDelimiter to integrate with
         # lorri's environment variable setup map. Then, call the original
@@ -116,14 +136,14 @@ let
           }
         fi
 
-        ${shell.preHook or ""}
+        ${shell.preHook}
       '';
 
-      origArgs = shell.args or [];
+      origArgs = shell.args;
       args = [
         "-e"
         (
-          builtins.toFile "lorri-wrapped-project" ''
+          writeTextFile "lorri-wrapped-project" ''
             mkdir -p "$out"
             touch "$out/varmap-v1"
 
@@ -143,7 +163,7 @@ let
 
             export > "$out/bash-export"
             cat << 'EOF' > "$out/services.json"
-            ${builtins.toJSON services}
+            ${builtins.toJSON { inherit services; }}
             EOF
           ''
         )
@@ -155,7 +175,17 @@ let
     }
   );
 
-  shell = if shellSrc == null then {} else logged shellSrc;
+  shell = {
+    name = "unknown";
+    args = [];
+    builder = null;
+    drvAttrs = {};
+    extraClosure = [];
+    outputs = [];
+    preHook = "";
+    system = null;
+    PATH = "";
+  } // (if shellSrc == null then {} else logged shellSrc);
   services = if servicesSrc == null then [] else logged servicesSrc;
 in
 wrapped-project shell services

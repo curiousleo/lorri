@@ -324,7 +324,7 @@ fn parse_evaluation_line<T>(line: T) -> LogDatum
 where
     T: AsRef<OsStr>,
 {
-    lazy_static! {
+    lazy_static::lazy_static! {
         // These are the .nix files that are opened for evaluation.
         static ref EVAL_FILE: Regex =
             Regex::new("^evaluating file '(?P<source>.*)'$").expect("invalid regex!");
@@ -663,7 +663,7 @@ in
         )
         .unwrap();
         assert_eq!(
-            r##"[{"args":["--fast"],"name":"service1","program":"program1_path"},{"args":["--faster"],"name":"service2","program":"program2_path"}]"##,
+            r##"{"services":[{"args":["--fast"],"name":"service1","program":"program1_path"},{"args":["--faster"],"name":"service2","program":"program2_path"}]}"##,
             String::from_utf8(writer).unwrap().trim()
         );
 
