@@ -1,4 +1,11 @@
-use lorri::{cas::ContentAddressable, ops::shell, project::Project, NixFile};
+use crossbeam_channel as chan;
+use lorri::{
+    builder::{self, RunStatus},
+    cas::ContentAddressable,
+    ops::shell,
+    project::{roots::Roots, Project},
+    NixFile,
+};
 use std::fs;
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
@@ -7,7 +14,7 @@ use std::path::{Path, PathBuf};
 fn loads_env() {
     let tempdir = tempfile::tempdir().expect("tempfile::tempdir() failed us!");
     let project = project("loads_env", tempdir.path());
-    let output = shell::bash_cmd(&project)
+    let output = shell::bash_cmd(build(&project), &project.cas)
         .unwrap()
         .args(&["-c", "echo $MY_ENV_VAR"])
         .output()
@@ -31,4 +38,22 @@ fn project(name: &str, cache_dir: &Path) -> Project {
         ContentAddressable::new(cas_dir).unwrap(),
     )
     .unwrap()
+}
+
+fn build(project: &Project) -> PathBuf {
+    let (tx, _rx) = chan::unbounded();
+    Path::new(
+        match builder::run(tx, &project.nix_file, &project.cas)
+            .unwrap()
+            .status
+        {
+            RunStatus::Complete(build) => {
+                Roots::from_project(&project).create_roots(build).unwrap()
+            }
+            _ => panic!("build failed"),
+        }
+        .shell_gc_root
+        .as_os_str(),
+    )
+    .to_owned()
 }
